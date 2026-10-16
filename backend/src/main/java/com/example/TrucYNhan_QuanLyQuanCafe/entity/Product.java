@@ -21,17 +21,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-
 @Entity
 @Table(name = "products")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Product {
 
     @Id
@@ -47,11 +38,9 @@ public class Product {
     private String alias;
 
     @ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(name = "category_id", nullable = false)
-@JsonIgnoreProperties({"products", "hibernateLazyInitializer", "handler"})
-@ToString.Exclude
-@EqualsAndHashCode.Exclude
-private Category category;
+    @JoinColumn(name = "category_id", nullable = false)
+    @JsonIgnoreProperties({"products", "hibernateLazyInitializer", "handler"})
+    private Category category;
 
     @Size(max = 500, message = "Mô tả ngắn không được vượt quá 500 ký tự")
     @Column(length = 500)
@@ -98,6 +87,32 @@ private Category category;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public Product() {
+    }
+
+    public Product(Long id, String name, String alias, Category category, String summary, String detail,
+                   BigDecimal price, BigDecimal salePrice, Integer quantity, String unit, String image,
+                   Integer view, String tag, Integer status, LocalDateTime createdAt,
+                   LocalDateTime updatedAt, LocalDateTime deletedAt) {
+        this.id = id;
+        this.name = name;
+        this.alias = alias;
+        this.category = category;
+        this.summary = summary;
+        this.detail = detail;
+        this.price = price;
+        this.salePrice = salePrice;
+        this.quantity = quantity;
+        this.unit = unit;
+        this.image = image;
+        this.view = view;
+        this.tag = tag;
+        this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.deletedAt = deletedAt;
+    }
 
     public Long getId() {
         return id;

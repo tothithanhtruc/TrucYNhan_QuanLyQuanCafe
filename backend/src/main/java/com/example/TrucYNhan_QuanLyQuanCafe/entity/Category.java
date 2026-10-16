@@ -7,11 +7,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
@@ -19,9 +14,6 @@ import java.util.List;
 
 @Entity
 @Table(name = "categories")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Category {
 
     @Id
@@ -49,16 +41,29 @@ public class Category {
     @Column
     private Integer status = 1;
 
-   @OneToMany(mappedBy = "category")
-@JsonIgnore
-@ToString.Exclude
-@EqualsAndHashCode.Exclude
-private List<Product> products = new ArrayList<>();
+    @OneToMany(mappedBy = "category")
+    @JsonIgnore
+    private List<Product> products = new ArrayList<>();
+
+    public Category() {
+    }
 
     public Category(Long id, String name, String description) {
         this.id = id;
         this.name = name;
         this.description = description;
+    }
+
+    public Category(Long id, String name, String alias, String image, Long parentId, String description, Integer sortOrder, Integer status, List<Product> products) {
+        this.id = id;
+        this.name = name;
+        this.alias = alias;
+        this.image = image;
+        this.parentId = parentId;
+        this.description = description;
+        this.sortOrder = sortOrder;
+        this.status = status;
+        this.products = products;
     }
 
     public Long getId() {
