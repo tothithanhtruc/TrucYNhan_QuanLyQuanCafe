@@ -20,7 +20,7 @@ public class Order {
     private Employee employee;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "table_id")
-    private Table table;
+    private TableEntity table;
     @Column(name = "order_type", nullable = false, length = 30)
     private String orderType = "ONLINE";
     @Column(name = "order_date", insertable = false)
@@ -49,8 +49,8 @@ public class Order {
     public void setUser(User user) { this.user = user; }
     public Employee getEmployee() { return employee; }
     public void setEmployee(Employee employee) { this.employee = employee; }
-    public Table getTable() { return table; }
-    public void setTable(Table table) { this.table = table; }
+    public TableEntity getTable() { return table; }
+    public void setTable(TableEntity table) { this.table = table; }
     public String getOrderType() { return orderType; }
     public void setOrderType(String orderType) { this.orderType = orderType; }
     public LocalDateTime getOrderDate() { return orderDate; }
