@@ -3,6 +3,7 @@ package com.example.TrucYNhan_QuanLyQuanCafe.repository;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -17,4 +18,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Phương thức 3: Tìm sản phẩm có giá lớn hơn 30000
     @Query("SELECT p FROM Product p WHERE p.price > 30000")
     List<Product> findProductsPriceGreaterThan30000();
+
+     // 5. Tìm sản phẩm còn hàng
+    List<Product> findByQuantityGreaterThan(Integer quantity);
+
+    // 6. Tìm sản phẩm theo tên và danh mục
+    @Query("""
+        SELECT p FROM Product p
+        WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+        AND p.category.id = :categoryId
+        """)
+    List<Product> searchByNameAndCategory(
+        @Param("name") String name,
+        @Param("categoryId") Long categoryId
+    );
+
 }

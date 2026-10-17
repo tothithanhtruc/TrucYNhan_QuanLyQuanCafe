@@ -18,9 +18,11 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id")
     private Employee employee;
+
    @ManyToOne(fetch = FetchType.LAZY)
 @JoinColumn(name = "table_id")
 private TableEntity table;
+
     @Column(name = "order_type", nullable = false, length = 30)
     private String orderType = "ONLINE";
     @Column(name = "order_date", insertable = false)
@@ -49,9 +51,11 @@ private TableEntity table;
     public void setUser(User user) { this.user = user; }
     public Employee getEmployee() { return employee; }
     public void setEmployee(Employee employee) { this.employee = employee; }
+
     public TableEntity getTable() {
     return table;
 }
+
     public void setTable(TableEntity table) { this.table = table; }
     public String getOrderType() { return orderType; }
     public void setOrderType(String orderType) { this.orderType = orderType; }

@@ -2,7 +2,7 @@
 package com.example.TrucYNhan_QuanLyQuanCafe.service.impl;
 
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.User;
-import com.example.TrucYNhan_QuanLyQuanCafe.mapper.UserRepository;
+import com.example.TrucYNhan_QuanLyQuanCafe.repository.UserRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.service.UserService;
 import org.springframework.stereotype.Service;
 
