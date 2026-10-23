@@ -1,6 +1,7 @@
 
 package com.example.TrucYNhan_QuanLyQuanCafe.service;
 
+import com.example.TrucYNhan_QuanLyQuanCafe.dto.RegisterRequest;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.User;
 import java.util.List;
 
@@ -10,6 +11,8 @@ public interface UserService {
     User getUserById(Long id);
 
     User createUser(User user);
+
+    User register(RegisterRequest request);
 
     User updateUser(Long id, User user);
 

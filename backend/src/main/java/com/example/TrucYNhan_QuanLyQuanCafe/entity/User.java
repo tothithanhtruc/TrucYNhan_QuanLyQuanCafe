@@ -2,6 +2,7 @@
 package com.example.TrucYNhan_QuanLyQuanCafe.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,6 +16,7 @@ public class User {
     @Column(name = "username")
     private String username;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "password")
     private String password;
 
