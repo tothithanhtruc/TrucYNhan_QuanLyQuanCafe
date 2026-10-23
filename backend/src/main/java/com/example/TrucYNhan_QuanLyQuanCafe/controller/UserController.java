@@ -1,11 +1,19 @@
 
 package com.example.TrucYNhan_QuanLyQuanCafe.controller;
 
+import com.example.TrucYNhan_QuanLyQuanCafe.dto.RegisterRequest;
+import com.example.TrucYNhan_QuanLyQuanCafe.dto.UserResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.User;
 import com.example.TrucYNhan_QuanLyQuanCafe.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -22,11 +30,61 @@ public class UserController {
         this.userService = userService;
     }
 
+    private UserResponse toResponse(User user) {
+        if (user == null) return null;
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole(),
+                user.getStatus(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
+    }
+
+    // Đăng ký người dùng mới (No Auth)
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        try {
+            User newUser = userService.register(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    Map.of(
+                            "success", true,
+                            "message", "Đăng ký người dùng thành công",
+                            "data", toResponse(newUser)
+                    )
+            );
+        } catch (RuntimeException e) {
+            return errorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Đăng ký thất bại");
+        }
+    }
+
+    // Đăng xuất (xóa SecurityContext và hủy session)
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            new SecurityContextLogoutHandler().logout(request, response, auth);
+        }
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đăng xuất thành công"
+        ));
+    }
+
     // Lấy danh sách người dùng
     @GetMapping
     public ResponseEntity<?> getAllUsers() {
         try {
-            List<User> users = userService.getAllUsers();
+            List<UserResponse> users = userService.getAllUsers()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
 
             return ResponseEntity.ok(Map.of(
                     "success", true,

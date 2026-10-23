@@ -1,7 +1,8 @@
-
 package com.example.TrucYNhan_QuanLyQuanCafe.dto;
 
 import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -9,6 +10,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record ProductRequest(
 
         @NotBlank(message = "Tên sản phẩm không được để trống")
@@ -19,6 +21,7 @@ public record ProductRequest(
         @Positive(message = "Danh mục phải lớn hơn 0")
         Long categoryId,
 
+        @JsonAlias({"description"})
         @Size(max = 500, message = "Mô tả ngắn không được vượt quá 500 ký tự")
         String summary,
 
@@ -31,6 +34,7 @@ public record ProductRequest(
         @PositiveOrZero(message = "Giá khuyến mãi không được âm")
         BigDecimal salePrice,
 
+        @JsonAlias({"quality"})
         @PositiveOrZero(message = "Số lượng không được âm")
         Integer quantity,
 

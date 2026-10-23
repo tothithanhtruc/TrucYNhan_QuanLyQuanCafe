@@ -1,9 +1,11 @@
 
 package com.example.TrucYNhan_QuanLyQuanCafe.service.impl;
 
+import com.example.TrucYNhan_QuanLyQuanCafe.dto.RegisterRequest;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.User;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.UserRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.service.UserService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,9 +15,11 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -30,9 +34,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User register(RegisterRequest request) {
+        if (userRepository.findByUsername(request.username()).isPresent()) {
+            throw new RuntimeException("Tên đăng nhập đã tồn tại: " + request.username());
+        }
+
+        User user = new User();
+        user.setUsername(request.username());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRole(request.role() != null && !request.role().isBlank() ? request.role().toUpperCase() : "USER");
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
+        user.setStatus(1);
+
+        LocalDateTime now = LocalDateTime.now();
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+
+        return userRepository.save(user);
+    }
+
+    @Override
     public User createUser(User user) {
         LocalDateTime now = LocalDateTime.now();
         user.setId(null);
+        if (user.getPassword() != null && !user.getPassword().startsWith("$2a$") && !user.getPassword().startsWith("$2b$")) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         return userRepository.save(user);
