@@ -5,6 +5,25 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+
+@JsonPropertyOrder({
+    "id",
+    "user",
+    "fullName",
+    "gender",
+    "phone",
+    "address",
+    "salary",
+    "hireDate",
+    "status",
+    "createdAt",
+    "updatedAt"
+})
+
+
+
 @Entity
 @Table(name = "employees")
 public class Employee {
@@ -38,6 +57,7 @@ public class Employee {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
 
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
@@ -73,6 +93,7 @@ public class Employee {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
