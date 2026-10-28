@@ -19,6 +19,7 @@ import AdminTablesPage from "./pages/admin/AdminTablesPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminTrashPage from "./pages/admin/AdminTrashPage";
 import AdminPostsPage from "./pages/admin/AdminPostsPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -45,15 +46,42 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
 
         {/* Quản trị (Admin) */}
-        <Route path="/admin" element={<DashboardPage />} />
-        <Route path="/admin/dashboard" element={<DashboardPage />} />
-        <Route path="/admin/products" element={<AdminProductsPage />} />
-        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
-        <Route path="/admin/orders" element={<AdminOrdersPage />} />
-        <Route path="/admin/tables" element={<AdminTablesPage />} />
-        <Route path="/admin/users" element={<AdminUsersPage />} />
-        <Route path="/admin/trash" element={<AdminTrashPage />} />
-        <Route path="/admin/posts" element={<AdminPostsPage />} />
+        <Route
+          path="/admin"
+          element={<ProtectedRoute adminOnly><DashboardPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/dashboard"
+          element={<ProtectedRoute adminOnly><DashboardPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/products"
+          element={<ProtectedRoute adminOnly><AdminProductsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/categories"
+          element={<ProtectedRoute adminOnly><AdminCategoriesPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/orders"
+          element={<ProtectedRoute adminOnly><AdminOrdersPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/tables"
+          element={<ProtectedRoute adminOnly><AdminTablesPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/users"
+          element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/trash"
+          element={<ProtectedRoute adminOnly><AdminTrashPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/posts"
+          element={<ProtectedRoute adminOnly><AdminPostsPage /></ProtectedRoute>}
+        />
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
