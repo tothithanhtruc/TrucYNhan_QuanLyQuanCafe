@@ -24,7 +24,6 @@ import AdminTrashPage from "./pages/admin/AdminTrashPage";
 import AdminPostsPage from "./pages/admin/AdminPostsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
 export default function App() {
   return (
     <BrowserRouter>
@@ -97,6 +96,8 @@ export default function App() {
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/tables" element={<AdminTablesPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
+
+
 
         <Route path="/admin/contacts" element={<AdminContactsPage />} />
         <Route path="/admin/trash" element={<AdminTrashPage />} />

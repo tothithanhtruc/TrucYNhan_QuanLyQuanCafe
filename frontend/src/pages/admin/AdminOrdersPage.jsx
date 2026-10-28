@@ -21,6 +21,9 @@ import {
   adminDeleteOrder,
 } from "../../services/adminApi";
 import { formatCurrency } from "../../utils/format";
+import Pagination from "../../components/Pagination";
+
+
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -32,11 +35,16 @@ export default function AdminOrdersPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [notification, setNotification] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
   const fetchOrders = async () => {
     setLoading(true);
     try {
@@ -141,17 +149,23 @@ export default function AdminOrdersPage() {
 
     return matchSearch && matchStatus;
   });
+// Tính tổng số trang
+const totalPages = Math.ceil(filteredOrders.length / pageSize);
 
+// Lấy đơn hàng của trang hiện tại
+const paginatedOrders = filteredOrders.slice(
+  (page - 1) * pageSize,
+  page * pageSize
+);
   return (
     <AdminLayout title="Quản Lý Đơn Hàng">
       <div className="space-y-6">
         {notification && (
           <div
-            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${
-              notification.type === "error"
+            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${notification.type === "error"
                 ? "bg-rose-50 text-rose-800 border-rose-200"
                 : "bg-emerald-50 text-emerald-800 border-emerald-200"
-            }`}
+              }`}
           >
             {notification.type === "error" ? (
               <AlertCircle className="w-4 h-4 text-rose-600" />
@@ -215,11 +229,10 @@ export default function AdminOrdersPage() {
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition ${
-                  statusFilter === tab.id
+                className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition ${statusFilter === tab.id
                     ? "bg-amber-700 text-white shadow-xs"
                     : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -256,7 +269,7 @@ export default function AdminOrdersPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((o) => (
+                  paginatedOrders.map((o) => (
                     <tr key={o.id || o.orderCode} className="hover:bg-stone-50/80 transition">
                       <td className="py-3 px-4 font-bold text-amber-900">
                         #{o.orderCode || o.id}
@@ -312,7 +325,11 @@ export default function AdminOrdersPage() {
             </table>
           </div>
         </div>
-
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
         {/* Modal Chi Tiết & Chuyển Trạng Thái Đơn Hàng */}
         {selectedOrder && (
           <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -325,8 +342,8 @@ export default function AdminOrdersPage() {
                   <p className="text-xs text-stone-500">
                     {selectedOrder.orderDate || selectedOrder.createdAt
                       ? new Date(
-                          selectedOrder.orderDate || selectedOrder.createdAt
-                        ).toLocaleString("vi-VN")
+                        selectedOrder.orderDate || selectedOrder.createdAt
+                      ).toLocaleString("vi-VN")
                       : ""}
                   </p>
                 </div>

@@ -19,6 +19,7 @@ import {
   adminDeleteCategory,
   adminUploadImage,
 } from "../../services/adminApi";
+import Pagination from "../../components/Pagination";
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -44,10 +45,17 @@ export default function AdminCategoriesPage() {
   const [formError, setFormError] = useState("");
   const [notification, setNotification] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  // Tải sản phẩm và danh mục khi mở trang
   useEffect(() => {
-    fetchCategories();
+      fetchCategories();
   }, []);
+
+  // Khi tìm kiếm hoặc lọc danh mục thì quay về trang 1
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -160,17 +168,23 @@ export default function AdminCategoriesPage() {
   const filteredCategories = categories.filter((c) =>
     (c.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+// Tính tổng số trang
+const totalPages = Math.ceil(filteredCategories.length / pageSize);
 
+// Lấy danh mục của trang hiện tại
+const paginatedCategories = filteredCategories.slice(
+  (page - 1) * pageSize,
+  page * pageSize
+);
   return (
     <AdminLayout title="Quản Lý Danh Mục">
       <div className="space-y-6">
         {notification && (
           <div
-            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${
-              notification.type === "error"
-                ? "bg-rose-50 text-rose-800 border-rose-200"
-                : "bg-emerald-50 text-emerald-800 border-emerald-200"
-            }`}
+            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${notification.type === "error"
+              ? "bg-rose-50 text-rose-800 border-rose-200"
+              : "bg-emerald-50 text-emerald-800 border-emerald-200"
+              }`}
           >
             {notification.type === "error" ? (
               <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -261,7 +275,7 @@ export default function AdminCategoriesPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredCategories.map((c) => (
+                 paginatedCategories.map((c) => (
                     <tr key={c.id} className="hover:bg-stone-50/80 transition">
                       <td className="py-3 px-4 font-bold text-stone-900">
                         {c.name}
@@ -311,7 +325,12 @@ export default function AdminCategoriesPage() {
             </table>
           </div>
         </div>
-
+        {/* Pagination */}
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
         {/* Modal Thêm / Sửa Danh Mục */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">

@@ -22,12 +22,15 @@ import {
   replyToContact,
   restoreContact,
 } from "../../services/contactApi";
+import Pagination from "../../components/Pagination";
 
 export default function AdminContactsPage() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewingTrash, setViewingTrash] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
   const [selectedContact, setSelectedContact] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
@@ -42,6 +45,10 @@ export default function AdminContactsPage() {
   useEffect(() => {
     fetchContacts();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, viewingTrash]);
 
   const showToast = (message, type = "success") => {
     setNotification({ message, type });
@@ -202,6 +209,15 @@ export default function AdminContactsPage() {
       .filter(Boolean)
       .some((value) => value.toLowerCase().includes(searchTerm.toLowerCase())),
   );
+  const totalPages = Math.ceil(filteredContacts.length / pageSize);
+  const paginatedContacts = filteredContacts.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   const formatDate = (value) => {
     if (!value) return "-";
@@ -305,7 +321,7 @@ export default function AdminContactsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredContacts.map((contact) => (
+                  paginatedContacts.map((contact) => (
                     <tr key={contact.id} className="hover:bg-stone-50/80 transition">
                       <td className="py-3 px-4">
                         <div className="font-bold text-stone-900">{contact.name}</div>
@@ -394,6 +410,13 @@ export default function AdminContactsPage() {
             </table>
           </div>
         </div>
+        {!loading && filteredContacts.length > 0 && totalPages > 1 && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       {notification && (
