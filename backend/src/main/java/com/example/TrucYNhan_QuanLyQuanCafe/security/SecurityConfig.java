@@ -72,6 +72,15 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/banners", "/api/banners/**").permitAll()
                 // Gửi liên hệ không cần auth
                 .requestMatchers(HttpMethod.POST, "/api/contacts", "/api/contacts/**").permitAll()
+                // Các endpoint thùng rác cần xác thực, kể cả khi chạy sau proxy
+                .requestMatchers(HttpMethod.GET, "/api/contacts/inbox").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/contacts/trash").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/contacts/*/restore").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/contacts/*/force-delete").authenticated()
+                // Xem và quản lý liên hệ yêu cầu đăng nhập
+                .requestMatchers(HttpMethod.GET, "/api/contacts", "/api/contacts/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/contacts/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/contacts/**").authenticated()
                 // Logout endpoint
                 .requestMatchers(HttpMethod.POST, "/api/users/logout", "/api/auth/logout").permitAll()
                 // Chỉ ADMIN mới có quyền tạo danh mục 

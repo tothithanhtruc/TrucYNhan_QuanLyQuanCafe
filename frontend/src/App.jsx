@@ -9,6 +9,8 @@ import BlogDetailPage from "./pages/(shop)/BlogDetailPage";
 import AboutPage from "./pages/(shop)/AboutPage";
 import ContactPage from "./pages/(shop)/ContactPage";
 import LoginPage from "./pages/(shop)/LoginPage";
+import RegisterPage from "./pages/(shop)/RegisterPage";
+import ContactInboxPage from "./pages/(shop)/ContactInboxPage";
 
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -17,7 +19,9 @@ import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 import AdminTablesPage from "./pages/admin/AdminTablesPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminContactsPage from "./pages/admin/AdminContactsPage";
 import AdminTrashPage from "./pages/admin/AdminTrashPage";
+
 
 export default function App() {
   return (
@@ -42,6 +46,8 @@ export default function App() {
 
         {/* Đăng nhập */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/inbox" element={<ContactInboxPage />} />
 
         {/* Quản trị (Admin) */}
         <Route path="/admin" element={<DashboardPage />} />
@@ -51,6 +57,8 @@ export default function App() {
         <Route path="/admin/orders" element={<AdminOrdersPage />} />
         <Route path="/admin/tables" element={<AdminTablesPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
+
+        <Route path="/admin/contacts" element={<AdminContactsPage />} />
         <Route path="/admin/trash" element={<AdminTrashPage />} />
 
         {/* Fallback route */}

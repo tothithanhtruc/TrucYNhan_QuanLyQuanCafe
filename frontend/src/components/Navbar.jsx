@@ -6,6 +6,7 @@ import {
   Heart,
   ShoppingBag,
   UserRound,
+  Mail,
 } from "lucide-react";
 
 import SearchModal from "./SearchModal";
@@ -132,6 +133,15 @@ export default function Navbar() {
                     className="block px-4 py-2.5 text-sm font-semibold text-amber-900 bg-amber-50/70 border-b border-stone-100 transition hover:bg-amber-100"
                   >
                     Trang Quản Trị (Admin)
+                  </Link>
+
+                  <Link
+                    to="/inbox"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Hộp thư phản hồi
                   </Link>
 
                   <Link

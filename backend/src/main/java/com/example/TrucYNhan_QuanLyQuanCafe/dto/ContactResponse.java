@@ -11,6 +11,8 @@ public record ContactResponse(
         String message,
         Integer status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        LocalDateTime deletedAt,
+        String adminReply
 ) {
 }
