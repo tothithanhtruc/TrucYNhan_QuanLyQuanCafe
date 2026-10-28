@@ -20,6 +20,7 @@ import {
   adminUpdateProduct,
   adminDeleteProduct,
   adminGetCategories,
+  adminUploadImage,
 } from "../../services/adminApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
 
@@ -53,6 +54,7 @@ export default function AdminProductsPage() {
   const [formData, setFormData] = useState(initialFormState);
   const [formError, setFormError] = useState("");
   const [notification, setNotification] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -69,7 +71,7 @@ export default function AdminProductsPage() {
       if (prodRes.status === "fulfilled") {
         const prodData =
           prodRes.value.data?.data || prodRes.value.data || [];
-        setProducts(prodData);
+        setProducts(sortNewestFirst(prodData));
       }
       if (catRes.status === "fulfilled") {
         const catData =
@@ -84,9 +86,35 @@ export default function AdminProductsPage() {
     }
   };
 
+  const sortNewestFirst = (items) =>
+    [...items].sort((a, b) => {
+      const dateA = a.createdAt || a.created_at;
+      const dateB = b.createdAt || b.created_at;
+      const timeA = dateA ? new Date(dateA).getTime() : 0;
+      const timeB = dateB ? new Date(dateB).getTime() : 0;
+      return timeB - timeA || Number(b.id || 0) - Number(a.id || 0);
+    });
+
   const showToast = (message, type = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const response = await adminUploadImage(file);
+      setFormData((current) => ({ ...current, image: response.data.url }));
+      showToast("Tải ảnh lên thành công!");
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh sản phẩm:", error);
+      showToast(error.response?.data?.message || "Không thể tải ảnh lên", "error");
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -575,12 +603,22 @@ export default function AdminProductsPage() {
                   {/* Image URL with preview */}
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">
-                      Đường Dẫn Hình Ảnh (URL)
+                      Hình Ảnh Sản Phẩm
                     </label>
-                    <div className="flex gap-3 items-center">
+                    <div className="flex flex-wrap gap-3 items-center">
+                      <label className="inline-flex cursor-pointer items-center rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-100">
+                        {uploadingImage ? "Đang tải..." : "Chọn ảnh từ máy"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/gif,image/webp"
+                          onChange={handleImageUpload}
+                          disabled={uploadingImage}
+                          className="hidden"
+                        />
+                      </label>
                       <input
                         type="text"
-                        placeholder="https://... hoặc /assets/..."
+                        placeholder="Hoặc dán URL ảnh..."
                         value={formData.image}
                         onChange={(e) =>
                           setFormData({ ...formData, image: e.target.value })

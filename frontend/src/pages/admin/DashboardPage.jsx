@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [recentOrders, setRecentOrders] = useState([]);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     fetchDashboardData();
@@ -43,6 +44,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setLoadError("");
     try {
       const [prodRes, orderRes, tableRes, userRes] = await Promise.allSettled([
         adminGetProducts(),
@@ -51,25 +53,23 @@ export default function DashboardPage() {
         adminGetUsers(),
       ]);
 
-      const products =
-        prodRes.status === "fulfilled"
-          ? prodRes.value.data?.data || prodRes.value.data || []
-          : [];
+      const products = getResponseData(prodRes);
 
-      const orders =
-        orderRes.status === "fulfilled"
-          ? orderRes.value.data?.data || orderRes.value.data || []
-          : [];
+      const orders = getResponseData(orderRes);
 
-      const tablesData =
-        tableRes.status === "fulfilled"
-          ? tableRes.value.data?.data || tableRes.value.data || []
-          : [];
+      const tablesData = getResponseData(tableRes);
 
-      const users =
-        userRes.status === "fulfilled"
-          ? userRes.value.data?.data || userRes.value.data || []
-          : [];
+      const users = getResponseData(userRes);
+
+      const failedRequests = [
+        prodRes,
+        orderRes,
+        tableRes,
+        userRes,
+      ].filter((result) => result.status === "rejected").length;
+      if (failedRequests > 0) {
+        setLoadError(`Không thể tải ${failedRequests} nguồn dữ liệu từ API.`);
+      }
 
       const pendingOrders = orders.filter(
         (o) =>
@@ -105,7 +105,7 @@ export default function DashboardPage() {
         usersCount: users.length,
       });
 
-      setRecentOrders(orders.slice(0, 5));
+      setRecentOrders(sortNewestFirst(orders, ["orderDate", "createdAt"] ).slice(0, 5));
       setTables(tablesData.slice(0, 8));
     } catch (err) {
       console.error("Lỗi khi tải dữ liệu dashboard:", err);
@@ -113,6 +113,21 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
+  const getResponseData = (result) => {
+    if (result.status !== "fulfilled") return [];
+    const data = result.value.data?.data || result.value.data || [];
+    return Array.isArray(data) ? data : [];
+  };
+
+  const sortNewestFirst = (items, dateFields) =>
+    [...items].sort((a, b) => {
+      const getTime = (item) => {
+        const date = dateFields.map((field) => item[field]).find(Boolean);
+        return date ? new Date(date).getTime() : 0;
+      };
+      return getTime(b) - getTime(a) || Number(b.id || 0) - Number(a.id || 0);
+    });
 
   const getOrderStatusBadge = (status) => {
     const s = (status || "PENDING").toUpperCase();
@@ -140,6 +155,17 @@ export default function DashboardPage() {
   return (
     <AdminLayout title="Tổng Quan Hệ Thống">
       <div className="space-y-6">
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <span>{loadError}</span>
+          <button
+            onClick={fetchDashboardData}
+            className="font-semibold underline hover:no-underline"
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

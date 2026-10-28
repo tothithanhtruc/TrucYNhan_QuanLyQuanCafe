@@ -17,6 +17,7 @@ import {
   adminCreateCategory,
   adminUpdateCategory,
   adminDeleteCategory,
+  adminUploadImage,
 } from "../../services/adminApi";
 
 export default function AdminCategoriesPage() {
@@ -42,6 +43,7 @@ export default function AdminCategoriesPage() {
   const [formData, setFormData] = useState(initialFormState);
   const [formError, setFormError] = useState("");
   const [notification, setNotification] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -64,6 +66,23 @@ export default function AdminCategoriesPage() {
   const showToast = (message, type = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3500);
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const response = await adminUploadImage(file);
+      setFormData((current) => ({ ...current, image: response.data.url }));
+      showToast("Tải ảnh lên thành công!");
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh danh mục:", error);
+      showToast(error.response?.data?.message || "Không thể tải ảnh lên", "error");
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -361,6 +380,34 @@ export default function AdminCategoriesPage() {
                     }
                     className="w-full px-3.5 py-2 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                    Hình Ảnh Danh Mục
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100">
+                      {uploadingImage ? "Đang tải..." : "Chọn ảnh từ máy"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/gif,image/webp"
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                        className="hidden"
+                      />
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Hoặc dán URL ảnh..."
+                      value={formData.image}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      className="min-w-0 flex-1 px-3.5 py-2 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:border-amber-700"
+                    />
+                  </div>
+                  {formData.image && (
+                    <img src={formData.image} alt="Xem trước" className="mt-2 h-16 w-16 rounded-xl object-cover border border-stone-200" />
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

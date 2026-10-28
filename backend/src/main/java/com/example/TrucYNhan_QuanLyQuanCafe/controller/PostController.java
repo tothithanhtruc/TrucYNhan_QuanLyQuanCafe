@@ -30,6 +30,14 @@ public class PostController {
         ));
     }
 
+    @GetMapping("/trash")
+    public ResponseEntity<Map<String, Object>> getDeleted() {
+        return ResponseEntity.ok(Map.of(
+                "message", "Lấy thùng rác bài viết thành công",
+                "data", postService.getDeleted()
+        ));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
         PostResponse post = postService.getById(id);
@@ -61,10 +69,16 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id) {
-        postService.delete(id);
+        postService.softDelete(id);
         return ResponseEntity.ok(Map.of(
                 "message", "Xóa bài viết thành công"
         ));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Map<String, Object>> permanentlyDelete(@PathVariable Long id) {
+        postService.permanentlyDelete(id);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn bài viết"));
     }
 
     @PutMapping("/{id}/soft-delete")

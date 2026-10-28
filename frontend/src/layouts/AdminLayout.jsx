@@ -14,6 +14,7 @@ import {
   Bell,
   ChevronRight,
   ShieldCheck,
+  Newspaper,
 } from "lucide-react";
 import { logout } from "../services/authApi";
 
@@ -58,6 +59,11 @@ export default function AdminLayout({ children, title = "Quản Trị Hệ Thố
       to: "/admin/users",
       label: "Người Dùng",
       icon: Users,
+    },
+    {
+      to: "/admin/posts",
+      label: "Bài Viết",
+      icon: Newspaper,
     },
   ];
 
