@@ -7,6 +7,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.service.CategoryService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -26,7 +27,7 @@ public class CategoryServiceImpl implements CategoryService {
     // Lấy danh sách danh mục
     @Override
     public List<Category> getAllCategories() {
-        return categoryRepository.findAll();
+        return categoryRepository.findByDeletedAtIsNull();
     }
 
     // Lấy danh mục theo ID
@@ -55,6 +56,29 @@ public class CategoryServiceImpl implements CategoryService {
     // Xóa danh mục
     @Override
     public void delete(Long id) {
+        if (!categoryRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Không tìm thấy danh mục với id: " + id);
+        }
+        Category category = getCategoryById(id);
+        category.setDeletedAt(LocalDateTime.now());
+        categoryRepository.save(category);
+    }
+
+    @Override
+    public List<Category> getDeletedCategories() {
+        return categoryRepository.findByDeletedAtIsNotNull();
+    }
+
+    @Override
+    public void restore(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục với id: " + id));
+        category.setDeletedAt(null);
+        categoryRepository.save(category);
+    }
+
+    @Override
+    public void permanentlyDelete(Long id) {
         if (!categoryRepository.existsById(id)) {
             throw new ResourceNotFoundException("Không tìm thấy danh mục với id: " + id);
         }

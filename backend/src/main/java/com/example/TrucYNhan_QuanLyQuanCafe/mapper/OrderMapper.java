@@ -44,7 +44,8 @@ public class OrderMapper {
                 order.getStatus(),
                 order.getNote(),
                 order.getCreatedAt(),
-                order.getUpdatedAt()
+                order.getUpdatedAt(),
+                order.getDeletedAt()
         );
     }
 }

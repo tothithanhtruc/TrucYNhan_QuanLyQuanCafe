@@ -11,6 +11,9 @@ public interface OrderService {
     OrderResponse create(OrderRequest request);
     OrderResponse update(Long id, OrderRequest request);
     void delete(Long id);
+    List<OrderResponse> getDeleted();
+    void restore(Long id);
+    void permanentlyDelete(Long id);
     List<OrderResponse> getByStatus(String status);
     List<OrderResponse> getByUserId(Long userId);
 }
