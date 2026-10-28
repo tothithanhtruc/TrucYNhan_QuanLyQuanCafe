@@ -1,0 +1,33 @@
+import api from "./axiosConfig";
+
+// Products API
+export const adminGetProducts = () => api.get("/products");
+export const adminCreateProduct = (data) => api.post("/products", data);
+export const adminUpdateProduct = (id, data) => api.put(`/products/${id}`, data);
+export const adminDeleteProduct = (id) => api.delete(`/products/${id}`);
+
+// Categories API
+export const adminGetCategories = () => api.get("/categories");
+export const adminCreateCategory = (data) => api.post("/categories", data);
+export const adminUpdateCategory = (id, data) => api.put(`/categories/${id}`, data);
+export const adminDeleteCategory = (id) => api.delete(`/categories/${id}`);
+
+// Orders API
+export const adminGetOrders = () => api.get("/orders");
+export const adminGetOrderById = (id) => api.get(`/orders/${id}`);
+export const adminCreateOrder = (data) => api.post("/orders", data);
+export const adminUpdateOrder = (id, data) => api.put(`/orders/${id}`, data);
+export const adminDeleteOrder = (id) => api.delete(`/orders/${id}`);
+
+// Tables API
+export const adminGetTables = () => api.get("/tables");
+export const adminGetTableById = (id) => api.get(`/tables/${id}`);
+export const adminCreateTable = (data) => api.post("/tables", data);
+export const adminUpdateTable = (id, data) => api.put(`/tables/${id}`, data);
+export const adminDeleteTable = (id) => api.delete(`/tables/${id}`);
+
+// Users API
+export const adminGetUsers = () => api.get("/users");
+export const adminCreateUser = (data) => api.post("/users", data);
+export const adminUpdateUser = (id, data) => api.put(`/users/${id}`, data);
+export const adminGetUserById = (id) => api.get(`/users/${id}`);

@@ -1,0 +1,152 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import PublicLayout from "../../layouts/PublicLayout";
+import { login } from "../../services/authApi";
+import { Coffee, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
+
+export default function LoginPage() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!username.trim() || !password) {
+      setError("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await login(username.trim(), password);
+      // Kiểm tra vai trò nếu có trong response hoặc redirect
+      const role =
+        res.data?.role ||
+        res.data?.user?.role ||
+        res.data?.data?.role ||
+        "";
+
+      if (
+        role.toUpperCase() === "ADMIN" ||
+        username.toLowerCase().includes("admin")
+      ) {
+        navigate("/admin");
+      } else {
+        navigate("/shop");
+      }
+    } catch (err) {
+      console.error("Lỗi đăng nhập:", err);
+      const msg =
+        err.response?.data?.message ||
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickDemoAdmin = () => {
+    setUsername("admin");
+    setPassword("admin123");
+  };
+
+  return (
+    <PublicLayout>
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 bg-[#faf8f5]">
+        <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl border border-stone-200 shadow-xl shadow-stone-200/50">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-50 text-amber-800 mb-3 border border-amber-200/60 shadow-xs">
+              <Coffee className="w-7 h-7" />
+            </div>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-stone-900 italic">
+              Đăng Nhập Bickrost
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-500 mt-1.5">
+              Hệ thống bán hàng &amp; quản lý quán cà phê
+            </p>
+          </div>
+
+          {/* Error Notice */}
+          {error && (
+            <div className="mb-6 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">
+                Tên Đăng Nhập
+              </label>
+              <div className="relative">
+                <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="text"
+                  required
+                  placeholder="Nhập tên tài khoản..."
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+                  Mật Khẩu
+                </label>
+                <Link
+                  to="#"
+                  className="text-xs text-amber-800 hover:text-amber-900 font-semibold"
+                >
+                  Quên mật khẩu?
+                </Link>
+              </div>
+              <div className="relative">
+                <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 py-3.5 px-4 bg-amber-800 hover:bg-amber-900 text-white text-sm font-bold rounded-xl shadow-md shadow-amber-900/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loading ? "Đang xử lý..." : "Đăng Nhập"}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+
+          {/* Quick Admin Test Helper */}
+          <div className="mt-6 pt-5 border-t border-stone-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-stone-500">Chuyển nhanh tới Admin:</span>
+              <Link
+                to="/admin"
+                className="text-xs font-bold text-amber-800 hover:text-amber-900 underline"
+              >
+                Vào thẳng Admin Portal &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </PublicLayout>
+  );
+}

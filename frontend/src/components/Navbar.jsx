@@ -15,7 +15,7 @@ export default function Navbar() {
 
   const navItems = [
     { to: "/", label: "Home", end: true },
-    { to: "/products", label: "Shop" },
+    { to: "/shop", label: "Shop" },
     { to: "/blog", label: "Blog" },
     { to: "/about", label: "About Us" },
     { to: "/contact", label: "Contact" },
@@ -76,8 +76,6 @@ export default function Navbar() {
               </svg>
             </button>
 
-            
-
             {/* Giỏ hàng */}
             <Link
               to="/cart"
@@ -128,6 +126,14 @@ export default function Navbar() {
               {/* Menu tài khoản */}
               {isUserMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-2 shadow-lg">
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block px-4 py-2.5 text-sm font-semibold text-amber-900 bg-amber-50/70 border-b border-stone-100 transition hover:bg-amber-100"
+                  >
+                    Trang Quản Trị (Admin)
+                  </Link>
+
                   <Link
                     to="/login"
                     onClick={() => setIsUserMenuOpen(false)}
