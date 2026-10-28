@@ -42,7 +42,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(request.username());
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRole(request.role() != null && !request.role().isBlank() ? request.role().toUpperCase() : "USER");
+        user.setRole("USER");
         user.setFullName(request.fullName());
         user.setEmail(request.email());
         user.setPhone(request.phone());

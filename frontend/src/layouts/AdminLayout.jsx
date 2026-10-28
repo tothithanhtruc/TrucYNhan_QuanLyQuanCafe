@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   Armchair,
   Users,
+  MessageSquare,
   LogOut,
   ExternalLink,
   Menu,
@@ -58,6 +59,11 @@ export default function AdminLayout({ children, title = "Quản Trị Hệ Thố
       to: "/admin/users",
       label: "Người Dùng",
       icon: Users,
+    },
+    {
+      to: "/admin/contacts",
+      label: "Liên Hệ",
+      icon: MessageSquare,
     },
   ];
 

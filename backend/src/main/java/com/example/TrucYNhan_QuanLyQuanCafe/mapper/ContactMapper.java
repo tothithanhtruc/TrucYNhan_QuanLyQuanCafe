@@ -38,7 +38,9 @@ public class ContactMapper {
                 contact.getMessage(),
                 contact.getStatus(),
                 contact.getCreatedAt(),
-                contact.getUpdatedAt()
+                contact.getUpdatedAt(),
+                contact.getDeletedAt(),
+                contact.getAdminReply()
         );
     }
 }

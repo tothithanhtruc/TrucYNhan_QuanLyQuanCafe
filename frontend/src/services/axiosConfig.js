@@ -11,9 +11,12 @@ const api = axios.create({
 
 // Interceptor: gắn Bearer token vào mọi request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token")?.trim();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    const authorization = token.startsWith("Bearer ")
+      ? token
+      : `Bearer ${token}`;
+    config.headers.set("Authorization", authorization);
   }
   return config;
 });
