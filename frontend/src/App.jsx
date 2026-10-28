@@ -21,6 +21,7 @@ import AdminTablesPage from "./pages/admin/AdminTablesPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminContactsPage from "./pages/admin/AdminContactsPage";
 import AdminTrashPage from "./pages/admin/AdminTrashPage";
+import AdminPostsPage from "./pages/admin/AdminPostsPage";
 
 
 export default function App() {
@@ -60,6 +61,7 @@ export default function App() {
 
         <Route path="/admin/contacts" element={<AdminContactsPage />} />
         <Route path="/admin/trash" element={<AdminTrashPage />} />
+        <Route path="/admin/posts" element={<AdminPostsPage />} />
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />

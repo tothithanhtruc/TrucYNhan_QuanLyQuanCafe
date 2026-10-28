@@ -70,6 +70,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
                 // Xem danh sách banner không cần auth
                 .requestMatchers(HttpMethod.GET, "/api/banners", "/api/banners/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/uploads/image").hasRole("ADMIN")
                 // Gửi liên hệ không cần auth
                 .requestMatchers(HttpMethod.POST, "/api/contacts", "/api/contacts/**").permitAll()
                 // Các endpoint thùng rác cần xác thực, kể cả khi chạy sau proxy

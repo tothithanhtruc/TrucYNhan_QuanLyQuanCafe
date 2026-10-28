@@ -8,6 +8,8 @@ import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
+    List<Post> findByDeletedAtIsNullOrderByCreatedAtDescIdDesc();
+    List<Post> findByDeletedAtIsNotNullOrderByDeletedAtDesc();
     List<Post> findByTopicId(Long topicId);
     List<Post> findByUserId(Long userId);
     List<Post> findByStatus(Integer status);

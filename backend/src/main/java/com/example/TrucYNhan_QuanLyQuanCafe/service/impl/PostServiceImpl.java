@@ -40,7 +40,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional(readOnly = true)
     public List<PostResponse> getAll() {
-        return postRepository.findAll().stream()
+        return postRepository.findByDeletedAtIsNullOrderByCreatedAtDescIdDesc().stream()
                 .map(postMapper::toResponse).toList();
     }
 
@@ -92,6 +92,21 @@ public class PostServiceImpl implements PostService {
         }
         post.setDeletedAt(null);
         postRepository.save(post);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PostResponse> getDeleted() {
+        return postRepository.findByDeletedAtIsNotNullOrderByDeletedAtDesc().stream()
+                .map(postMapper::toResponse).toList();
+    }
+
+    @Override
+    public void permanentlyDelete(Long id) {
+        if (!postRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Không tìm thấy bài viết với id: " + id);
+        }
+        postRepository.deleteById(id);
     }
 
     private void applyRequest(Post post, PostRequest request) {

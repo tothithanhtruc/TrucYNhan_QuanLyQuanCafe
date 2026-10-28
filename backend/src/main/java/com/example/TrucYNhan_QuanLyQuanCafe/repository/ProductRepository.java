@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByDeletedAtIsNull();
+    List<Product> findByDeletedAtIsNullOrderByCreatedAtDescIdDesc();
     List<Product> findByDeletedAtIsNotNull();
 
     // Phương thức 1: Có sẵn từ JpaRepository

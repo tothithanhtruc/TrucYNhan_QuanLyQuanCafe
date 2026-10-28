@@ -13,4 +13,6 @@ public interface PostService {
     void delete(Long id);
     void softDelete(Long id);
     void restore(Long id);
+    List<PostResponse> getDeleted();
+    void permanentlyDelete(Long id);
 }

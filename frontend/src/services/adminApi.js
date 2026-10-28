@@ -1,5 +1,11 @@
 import api from "./axiosConfig";
 
+export const adminUploadImage = (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return api.post("/uploads/image", formData);
+};
+
 // Products API
 export const adminGetProducts = () => api.get("/products");
 export const adminCreateProduct = (data) => api.post("/products", data);
@@ -40,3 +46,13 @@ export const adminGetUsers = () => api.get("/users");
 export const adminCreateUser = (data) => api.post("/users", data);
 export const adminUpdateUser = (id, data) => api.put(`/users/${id}`, data);
 export const adminGetUserById = (id) => api.get(`/users/${id}`);
+
+// Posts API
+export const adminGetPosts = () => api.get("/posts");
+export const adminCreatePost = (data) => api.post("/posts", data);
+export const adminUpdatePost = (id, data) => api.put(`/posts/${id}`, data);
+export const adminSoftDeletePost = (id) => api.delete(`/posts/${id}`);
+export const adminGetDeletedPosts = () => api.get("/posts/trash");
+export const adminRestorePost = (id) => api.put(`/posts/${id}/restore`);
+export const adminPermanentlyDeletePost = (id) => api.delete(`/posts/${id}/permanent`);
+export const adminGetTopics = () => api.get("/topics");
