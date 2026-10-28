@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import {
   Search,
@@ -10,9 +10,22 @@ import {
 } from "lucide-react";
 
 import SearchModal from "./SearchModal";
+import { CART_UPDATED_EVENT, getCartItemCount } from "../utils/cart";
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const syncCartCount = () => setCartCount(getCartItemCount());
+    syncCartCount();
+    window.addEventListener(CART_UPDATED_EVENT, syncCartCount);
+    window.addEventListener("storage", syncCartCount);
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, syncCartCount);
+      window.removeEventListener("storage", syncCartCount);
+    };
+  }, []);
 
   const navItems = [
     { to: "/", label: "Home", end: true },
@@ -96,7 +109,7 @@ export default function Navbar() {
               </svg>
 
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-800 px-1 text-[10px] font-bold text-white ring-2 ring-white">
-                0
+                {cartCount}
               </span>
             </Link>
 

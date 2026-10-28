@@ -1,13 +1,15 @@
 
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import ProductCard from "../../components/ProductCard";
 import { getProductById, getProducts } from "../../services/productApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
+import { addToCart } from "../../utils/cart";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -152,6 +154,24 @@ export default function ProductDetailPage() {
     ) {
       setQuantity(nextQuantity);
     }
+  };
+
+  const cartProduct = {
+    id: product.id,
+    name: product.name,
+    price: currentPrice,
+    image: product.image,
+    stock,
+    unit: product.unit,
+  };
+
+  const handleAddToCart = () => {
+    addToCart(cartProduct, quantity);
+  };
+
+  const handleBuyNow = () => {
+    addToCart(cartProduct, quantity);
+    navigate("/cart");
   };
 
   return (
@@ -305,6 +325,25 @@ export default function ProductDetailPage() {
                 <p className="mb-6 font-medium text-red-600">
                   Sản phẩm hiện đã hết hàng.
                 </p>
+              )}
+
+              {stock > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="rounded-lg border border-amber-800 px-6 py-3 font-semibold text-amber-800 transition hover:bg-amber-50"
+                  >
+                    Thêm vào giỏ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    className="rounded-lg bg-amber-800 px-6 py-3 font-semibold text-white transition hover:bg-amber-700"
+                  >
+                    Mua ngay
+                  </button>
+                </div>
               )}
             </div>
           </div>
