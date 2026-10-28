@@ -11,6 +11,7 @@ import ContactPage from "./pages/(shop)/ContactPage";
 import LoginPage from "./pages/(shop)/LoginPage";
 import RegisterPage from "./pages/(shop)/RegisterPage";
 import ContactInboxPage from "./pages/(shop)/ContactInboxPage";
+import CartPage from "./pages/(shop)/CartPage";
 
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/shop/:id" element={<ProductDetailPage />} />
         <Route path="/products" element={<ShopProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/cart" element={<CartPage />} />
 
         {/* Bài viết & Tin tức */}
         <Route path="/blog" element={<BlogPage />} />
