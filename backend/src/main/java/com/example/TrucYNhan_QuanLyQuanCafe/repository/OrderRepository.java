@@ -8,6 +8,8 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    List<Order> findByStatusIgnoreCase(String status);
-    List<Order> findByUserId(Long userId);
+    List<Order> findByDeletedAtIsNull();
+    List<Order> findByDeletedAtIsNotNull();
+    List<Order> findByStatusIgnoreCaseAndDeletedAtIsNull(String status);
+    List<Order> findByUserIdAndDeletedAtIsNull(Long userId);
 }

@@ -67,6 +67,23 @@ public class OrderController {
         ));
     }
 
+    @GetMapping("/trash")
+    public ResponseEntity<Map<String, Object>> getDeleted() {
+        return ResponseEntity.ok(Map.of("data", orderService.getDeleted()));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<Map<String, Object>> restore(@PathVariable Long id) {
+        orderService.restore(id);
+        return ResponseEntity.ok(Map.of("message", "Khôi phục đơn hàng thành công"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Map<String, Object>> permanentlyDelete(@PathVariable Long id) {
+        orderService.permanentlyDelete(id);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn đơn hàng"));
+    }
+
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getByStatus(@RequestParam String status) {
         List<OrderResponse> orders = orderService.getByStatus(status);

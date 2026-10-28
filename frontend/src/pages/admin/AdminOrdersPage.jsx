@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import {
   ShoppingBag,
@@ -172,14 +173,22 @@ export default function AdminOrdersPage() {
             </p>
           </div>
 
-          <button
-            onClick={fetchOrders}
-            title="Làm mới"
-            className="self-start sm:self-auto p-2.5 bg-white border border-stone-200 hover:bg-stone-50 text-stone-600 rounded-xl transition flex items-center gap-2 text-sm font-semibold"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Làm Mới
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={fetchOrders}
+              title="Làm mới"
+              className="p-2.5 bg-white border border-stone-200 hover:bg-stone-50 text-stone-600 rounded-xl transition"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+            <Link
+              to="/admin/trash"
+              title="Mở thùng rác"
+              className="p-2.5 text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-xl transition"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         {/* Filter and Search */}

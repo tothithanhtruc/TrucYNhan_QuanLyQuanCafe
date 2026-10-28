@@ -21,4 +21,7 @@ public interface CategoryService {
 
     // Xóa danh mục
     void delete(Long id);
+    List<Category> getDeletedCategories();
+    void restore(Long id);
+    void permanentlyDelete(Long id);
 }

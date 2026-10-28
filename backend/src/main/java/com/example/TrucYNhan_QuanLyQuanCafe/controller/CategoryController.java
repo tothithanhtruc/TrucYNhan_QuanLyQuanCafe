@@ -101,4 +101,23 @@ public class CategoryController {
                 "message", "Xóa danh mục thành công"
         ));
     }
+
+    @GetMapping("/trash")
+    public ResponseEntity<Map<String, Object>> getDeletedCategories() {
+        List<CategoryResponse> categories = categoryService.getDeletedCategories().stream()
+                .map(categoryMapper::toResponse).toList();
+        return ResponseEntity.ok(Map.of("data", categories));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<Map<String, Object>> restore(@PathVariable Long id) {
+        categoryService.restore(id);
+        return ResponseEntity.ok(Map.of("message", "Khôi phục danh mục thành công"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Map<String, Object>> permanentlyDelete(@PathVariable Long id) {
+        categoryService.permanentlyDelete(id);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn danh mục"));
+    }
 }

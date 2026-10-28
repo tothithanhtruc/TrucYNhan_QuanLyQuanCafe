@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 @Transactional
@@ -43,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getAll() {
-        return orderRepository.findAll().stream()
+        return orderRepository.findByDeletedAtIsNull().stream()
                 .map(orderMapper::toResponse).toList();
     }
 
@@ -84,20 +85,46 @@ public class OrderServiceImpl implements OrderService {
         if (!orderRepository.existsById(id)) {
             throw new ResourceNotFoundException("Không tìm thấy đơn hàng với id: " + id);
         }
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với id: " + id));
+        order.setDeletedAt(LocalDateTime.now());
+        orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getDeleted() {
+        return orderRepository.findByDeletedAtIsNotNull().stream()
+                .map(orderMapper::toResponse).toList();
+    }
+
+    @Override
+    public void restore(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với id: " + id));
+        order.setDeletedAt(null);
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void permanentlyDelete(Long id) {
+        if (!orderRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Không tìm thấy đơn hàng với id: " + id);
+        }
         orderRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getByStatus(String status) {
-        return orderRepository.findByStatusIgnoreCase(status).stream()
+        return orderRepository.findByStatusIgnoreCaseAndDeletedAtIsNull(status).stream()
                 .map(orderMapper::toResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderResponse> getByUserId(Long userId) {
-        return orderRepository.findByUserId(userId).stream()
+        return orderRepository.findByUserIdAndDeletedAtIsNull(userId).stream()
                 .map(orderMapper::toResponse).toList();
     }
 

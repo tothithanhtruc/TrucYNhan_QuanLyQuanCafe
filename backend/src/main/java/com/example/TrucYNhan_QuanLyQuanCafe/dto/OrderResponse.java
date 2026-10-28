@@ -20,6 +20,7 @@ public record OrderResponse(
         String status,
         String note,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        LocalDateTime deletedAt
 ) {
 }

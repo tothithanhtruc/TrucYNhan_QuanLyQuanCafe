@@ -87,6 +87,23 @@ public class ProductController {
         ));
     }
 
+    @GetMapping("/trash")
+    public ResponseEntity<Map<String, Object>> getDeletedProducts() {
+        return ResponseEntity.ok(Map.of("data", productService.getDeletedProducts()));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<Map<String, Object>> restore(@PathVariable Long id) {
+        productService.restore(id);
+        return ResponseEntity.ok(Map.of("message", "Khôi phục sản phẩm thành công"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Map<String, Object>> permanentlyDelete(@PathVariable Long id) {
+        productService.permanentlyDelete(id);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn sản phẩm"));
+    }
+
     // Tìm sản phẩm theo tên
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchByName(

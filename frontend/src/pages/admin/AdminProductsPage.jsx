@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import {
   Coffee,
@@ -235,6 +236,13 @@ export default function AdminProductsPage() {
             >
               <Plus className="w-4 h-4" /> Thêm Món Mới
             </button>
+            <Link
+              to="/admin/trash"
+              title="Mở thùng rác"
+              className="p-2.5 text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-xl transition"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Link>
           </div>
         </div>
 
