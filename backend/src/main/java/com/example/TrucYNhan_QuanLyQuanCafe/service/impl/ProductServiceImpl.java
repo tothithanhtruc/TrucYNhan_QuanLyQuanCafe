@@ -11,6 +11,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.service.ProductService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -29,7 +30,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<Product> getAllProducts() {
-        return productRepository.findAll();
+        return productRepository.findByDeletedAtIsNull();
     }
 
     @Override
@@ -101,12 +102,36 @@ public class ProductServiceImpl implements ProductService {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id);
         }
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id));
+        product.setDeletedAt(LocalDateTime.now());
+        productRepository.save(product);
+    }
+
+    @Override
+    public List<Product> getDeletedProducts() {
+        return productRepository.findByDeletedAtIsNotNull();
+    }
+
+    @Override
+    public void restore(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id));
+        product.setDeletedAt(null);
+        productRepository.save(product);
+    }
+
+    @Override
+    public void permanentlyDelete(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id);
+        }
         productRepository.deleteById(id);
     }
 
     @Override
     public List<Product> findByNameContaining(String name) {
-        return productRepository.findByNameContaining(name);
+        return productRepository.findByNameContainingAndDeletedAtIsNull(name);
     }
 
     @Override

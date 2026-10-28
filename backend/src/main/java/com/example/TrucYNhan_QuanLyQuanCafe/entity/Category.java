@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "categories")
@@ -40,6 +41,9 @@ public class Category {
 
     @Column
     private Integer status = 1;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "category")
     @JsonIgnore
@@ -128,6 +132,14 @@ public class Category {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 
     public List<Product> getProducts() {
