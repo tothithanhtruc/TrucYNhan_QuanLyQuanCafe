@@ -1,12 +1,22 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import ShopProductsPage from "./pages/ShopProductsPage";
-import ProductDetailPage from "./pages/ProductDetailPage";
-import BlogPage from "./pages/BlogPage";
-import BlogDetailPage from "./pages/BlogDetailPage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import ProductListPage from "./pages/ProductListPage";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+// Shop Pages
+import HomePage from "./pages/(shop)/HomePage";
+import ShopProductsPage from "./pages/(shop)/ShopProductsPage";
+import ProductDetailPage from "./pages/(shop)/ProductDetailPage";
+import BlogPage from "./pages/(shop)/BlogPage";
+import BlogDetailPage from "./pages/(shop)/BlogDetailPage";
+import AboutPage from "./pages/(shop)/AboutPage";
+import ContactPage from "./pages/(shop)/ContactPage";
+import LoginPage from "./pages/(shop)/LoginPage";
+
+// Admin Pages
+import DashboardPage from "./pages/admin/DashboardPage";
+import AdminProductsPage from "./pages/admin/AdminProductsPage";
+import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
+import AdminTablesPage from "./pages/admin/AdminTablesPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
 
 export default function App() {
   return (
@@ -15,7 +25,9 @@ export default function App() {
         {/* Trang chủ */}
         <Route path="/" element={<HomePage />} />
 
-        {/* Cửa hàng & Chi tiết sản phẩm */}
+        {/* Cửa hàng & Chi tiết sản phẩm - Hỗ trợ cả /shop và /products */}
+        <Route path="/shop" element={<ShopProductsPage />} />
+        <Route path="/shop/:id" element={<ProductDetailPage />} />
         <Route path="/products" element={<ShopProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
 
@@ -27,8 +39,20 @@ export default function App() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
 
+        {/* Đăng nhập */}
+        <Route path="/login" element={<LoginPage />} />
+
         {/* Quản trị (Admin) */}
-        <Route path="/admin/products" element={<ProductListPage />} />
+        <Route path="/admin" element={<DashboardPage />} />
+        <Route path="/admin/dashboard" element={<DashboardPage />} />
+        <Route path="/admin/products" element={<AdminProductsPage />} />
+        <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+        <Route path="/admin/orders" element={<AdminOrdersPage />} />
+        <Route path="/admin/tables" element={<AdminTablesPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
