@@ -1,6 +1,11 @@
 import api from "./axiosConfig";
 
 /**
+ * POST /api/users/register
+ */
+export const register = (data) => api.post("/users/register", data);
+
+/**
  * POST /api/auth/login  → { token, ... }
  * Lưu token vào localStorage sau khi đăng nhập thành công
  */
