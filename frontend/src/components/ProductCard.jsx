@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { formatCurrency, resolveProductImage } from "../utils/format";
 
 /**
@@ -15,6 +16,12 @@ export default function ProductCard({ product }) {
     badge,
     image,
   } = product || {};
+
+  // Xử lý an toàn: category có thể là String hoặc Object { id, name, ... } từ Spring Boot
+  const categoryName =
+    typeof category === "object" && category !== null
+      ? category.name || "Coffee"
+      : category || "Coffee";
 
   const imageUrl = resolveProductImage(image, id);
 
@@ -34,7 +41,10 @@ export default function ProductCard({ product }) {
     badge === "best" ? "Best Seller" : badge;
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden border border-stone-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col">
+    <Link
+      to={`/products/${id}`}
+      className="bg-white rounded-lg overflow-hidden border border-stone-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col"
+    >
       {/* Image container */}
       <div className="relative bg-[#f8f6f2] h-60 flex items-center justify-center overflow-hidden p-6">
         <img
@@ -56,8 +66,10 @@ export default function ProductCard({ product }) {
       <div className="p-4 text-center flex-1 flex flex-col justify-between">
         <div>
           <div className="flex justify-center text-xs mb-1.5">{stars}</div>
-          <p className="text-[11px] text-stone-400 uppercase tracking-widest mb-1">{category}</p>
-          <h3 className="font-heading font-medium text-stone-800 text-base leading-snug line-clamp-1 mb-2 hover:text-amber-800 transition-colors">
+          <p className="text-[11px] text-stone-400 uppercase tracking-widest mb-1 truncate">
+            {categoryName}
+          </p>
+          <h3 className="font-heading font-medium text-stone-800 text-base leading-snug line-clamp-1 mb-2 group-hover:text-amber-800 transition-colors">
             {name}
           </h3>
         </div>
@@ -72,6 +84,6 @@ export default function ProductCard({ product }) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

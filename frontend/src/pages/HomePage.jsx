@@ -5,169 +5,352 @@ import ProductCard from "../components/ProductCard";
 import { getProducts } from "../services/productApi";
 import { getBanners } from "../services/bannerApi";
 
-const FALLBACK_HERO = {
-  title: "Test and aroma\nbrazilian Coffee.",
-  subtitle: "Khám phá hương vị cà phê hảo hạng được tuyển chọn từ các vùng nguyên liệu trứ danh.",
-  image: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=900&q=85",
-};
-
-/** Chuyển đổi dữ liệu từ Spring Boot backend sang chuẩn ProductCard */
 function mapProduct(p) {
-  const currentPrice = Number(p.salePrice ?? p.price ?? 0);
-  const original = p.salePrice && p.price && Number(p.salePrice) < Number(p.price)
-    ? Number(p.price)
-    : undefined;
+  const price = Number(p.salePrice ?? p.sale_price ?? p.price ?? 0);
+  const originalPrice = Number(p.price ?? 0);
 
   return {
     id: p.id,
-    name: p.name ?? "Cà phê",
-    category: p.category?.name ?? p.categoryName ?? "Cà phê",
-    categoryId: p.category?.id ?? p.categoryId ?? null,
-    price: currentPrice,
-    originalPrice: original,
-    rating: 5,
-    badge: p.tag ?? (p.salePrice ? "sale" : null),
+    name: p.name,
+    category:
+      p.category?.name ??
+      p.categoryName ??
+      p.category_name ??
+      "",
+    categoryId:
+      p.category?.id ??
+      p.categoryId ??
+      p.category_id ??
+      null,
+    price,
+    originalPrice:
+      price > 0 && originalPrice > price
+        ? originalPrice
+        : undefined,
+    rating: p.rating ?? 0,
+    badge:
+      p.tag ??
+      (price > 0 && originalPrice > price ? "sale" : null),
     image: p.image,
   };
 }
 
 export default function HomePage() {
   const [products, setProducts] = useState([]);
-  const [hero, setHero] = useState(FALLBACK_HERO);
+  const [banners, setBanners] = useState([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+
   const [loading, setLoading] = useState(true);
+  const [bannerLoading, setBannerLoading] = useState(true);
+  const [productError, setProductError] = useState("");
+  const [bannerError, setBannerError] = useState("");
 
+  const hero = banners[currentBannerIndex] ?? null;
+
+  // Tải sản phẩm và banner từ backend
   useEffect(() => {
-    Promise.allSettled([getProducts(), getBanners()])
-      .then(([prodRes, bannerRes]) => {
-        if (prodRes.status === "fulfilled") {
-          const raw = prodRes.value.data?.data ?? prodRes.value.data;
-          if (Array.isArray(raw) && raw.length > 0) {
-            setProducts(raw.slice(0, 8).map(mapProduct));
-          }
-        }
+    let isMounted = true;
 
-        if (bannerRes.status === "fulfilled") {
-          const banners = bannerRes.value.data?.data ?? bannerRes.value.data;
-          if (Array.isArray(banners) && banners.length > 0) {
-            const b = banners[0];
-            setHero({
-              title: b.name ?? b.title ?? FALLBACK_HERO.title,
-              subtitle: b.description ?? b.summary ?? FALLBACK_HERO.subtitle,
-              image: b.image ?? FALLBACK_HERO.image,
-            });
-          }
+    async function loadHomeData() {
+      const [productResult, bannerResult] = await Promise.allSettled([
+        getProducts(),
+        getBanners(),
+      ]);
+
+      if (!isMounted) return;
+
+      // Sản phẩm
+      if (productResult.status === "fulfilled") {
+        const response = productResult.value.data;
+        const rawProducts = response?.data ?? response;
+
+        if (Array.isArray(rawProducts)) {
+          setProducts(rawProducts.slice(0, 8).map(mapProduct));
+          setProductError("");
+        } else {
+          setProducts([]);
+          setProductError("Dữ liệu sản phẩm không hợp lệ.");
         }
-      })
-      .catch((err) => {
-        console.error("Lỗi khi tải dữ liệu trang chủ:", err);
-      })
-      .finally(() => setLoading(false));
+      } else {
+        console.error("Lỗi tải sản phẩm:", productResult.reason);
+        setProducts([]);
+        setProductError("Không thể tải sản phẩm từ máy chủ.");
+      }
+
+      // Banner
+      if (bannerResult.status === "fulfilled") {
+        const response = bannerResult.value.data;
+        const rawBanners = response?.data ?? response;
+
+        if (Array.isArray(rawBanners)) {
+          const activeBanners = rawBanners
+            .filter(
+              (banner) =>
+                Number(banner.status) === 1 &&
+                typeof banner.image === "string" &&
+                banner.image.trim() !== ""
+            )
+            .sort(
+              (a, b) =>
+                Number(a.sortOrder ?? a.sort_order ?? 0) -
+                Number(b.sortOrder ?? b.sort_order ?? 0)
+            );
+
+          setBanners(activeBanners);
+          setCurrentBannerIndex(0);
+          setBannerError(
+            activeBanners.length === 0
+              ? "Chưa có banner đang hoạt động."
+              : ""
+          );
+        } else {
+          setBanners([]);
+          setBannerError("Dữ liệu banner trả về không hợp lệ.");
+        }
+      } else {
+        console.error("Lỗi tải banner:", bannerResult.reason);
+        setBanners([]);
+        setBannerError("Không thể kết nối API banner.");
+      }
+
+      setLoading(false);
+      setBannerLoading(false);
+    }
+
+    loadHomeData().catch((error) => {
+      console.error("Lỗi tải dữ liệu trang chủ:", error);
+
+      if (isMounted) {
+        setProductError("Đã xảy ra lỗi khi tải sản phẩm.");
+        setBannerError("Đã xảy ra lỗi khi tải banner.");
+        setLoading(false);
+        setBannerLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Tự động chuyển banner sau mỗi 4 giây
+  useEffect(() => {
+    if (banners.length <= 1) return;
+
+    const timer = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
+  // Chuyển tới banner trước
+  const handlePreviousBanner = () => {
+    setCurrentBannerIndex(
+      (prev) => (prev - 1 + banners.length) % banners.length
+    );
+  };
+
+  // Chuyển tới banner tiếp theo
+  const handleNextBanner = () => {
+    setCurrentBannerIndex(
+      (prev) => (prev + 1) % banners.length
+    );
+  };
 
   return (
     <PublicLayout>
-      {/* ═══════════ HERO BANNER (ảnh 1) ═══════════ */}
-      <section className="bg-[#f5f2ec] py-16 lg:py-24 overflow-hidden border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <span className="text-xs tracking-[3px] uppercase text-stone-500 block mb-4 font-semibold">
-              ORIGINAL COFFEE
-            </span>
-            <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-stone-900 leading-[1.15] mb-6 whitespace-pre-line">
-              {hero.title}
-            </h1>
-            <p className="text-stone-600 text-sm sm:text-base leading-relaxed mb-8 max-w-md">
-              {hero.subtitle}
-            </p>
-            <Link
-              to="/products"
-              className="inline-block bg-[#a0522d] hover:bg-[#854324] text-white text-xs font-bold uppercase tracking-widest px-8 py-3.5 rounded shadow transition-all duration-200"
-            >
-              Buy Now
-            </Link>
-          </div>
-          <div className="relative">
-            <img
-              src={hero.image}
-              alt="Coffee Beans"
-              className="w-full h-80 sm:h-96 lg:h-[420px] object-cover rounded-2xl shadow-xl"
-            />
-          </div>
-        </div>
-      </section>
+      {/* HERO BANNER SLIDER */}
+      
+{/* HERO BANNER SLIDER */}
+<section className="relative w-full overflow-hidden bg-[#f5f2ec]">
+  {bannerLoading ? (
+    <div className="flex min-h-[500px] items-center justify-center text-stone-500">
+      Đang tải banner...
+    </div>
+  ) : hero ? (
+    <div className="relative min-h-[500px] w-full sm:min-h-[600px] lg:min-h-[720px]">
 
-      {/* ═══════════ FEATURE SECTION (ảnh 2) ═══════════ */}
-      <section className="py-20 lg:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-14 items-center">
+      {/* Ảnh nền phủ toàn bộ banner */}
+      <img
+        key={`image-${hero.id ?? currentBannerIndex}`}
+        src={hero.image}
+        alt={hero.name ?? hero.title ?? "Banner quán cà phê"}
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        onError={(event) => {
+          event.currentTarget.style.display = "none";
+          setBannerError("Không tải được ảnh banner.");
+        }}
+      />
+
+      {/* Lớp phủ tối giúp chữ dễ đọc */}
+      <div className="absolute inset-0 bg-black/40" />
+
+      {/* Nội dung nằm đè lên ảnh */}
+      <div className="relative z-10 mx-auto flex min-h-[500px] max-w-7xl items-center px-6 py-20 sm:min-h-[600px] lg:min-h-[720px] lg:px-4">
+        <div className="max-w-3xl text-white">
+
+          <span className="mb-5 block text-xs font-semibold uppercase tracking-[4px] text-white/80 sm:text-sm">
+            ORIGINAL COFFEE
+          </span>
+
+          <h1
+            key={`title-${hero.id ?? currentBannerIndex}`}
+            className="mb-7 max-w-3xl whitespace-pre-line font-heading text-4xl font-bold leading-[1.15] sm:text-5xl lg:text-7xl"
+          >
+            {hero.name ?? hero.title ?? "Cà phê của chúng tôi"}
+          </h1>
+
+          {(hero.description || hero.summary) && (
+            <p className="mb-8 max-w-xl text-sm leading-relaxed text-white/85 sm:text-base">
+              {hero.description || hero.summary}
+            </p>
+          )}
+
+          <Link
+            to={
+              hero.link?.startsWith("/") && !hero.link.startsWith("//")
+                ? hero.link
+                : "/products"
+            }
+            className="inline-block rounded bg-[#a0522d] px-8 py-4 text-xs font-bold uppercase tracking-widest text-white shadow-lg transition hover:bg-[#854324]"
+          >
+            Xem cửa hàng
+          </Link>
+        </div>
+      </div>
+
+      {/* Nút chuyển banner */}
+      {banners.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={handlePreviousBanner}
+            aria-label="Banner trước"
+            className="absolute left-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-3xl text-stone-900 shadow transition hover:bg-[#a0522d] hover:text-white sm:left-8"
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            onClick={handleNextBanner}
+            aria-label="Banner tiếp theo"
+            className="absolute right-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-3xl text-stone-900 shadow transition hover:bg-[#a0522d] hover:text-white sm:right-8"
+          >
+            ›
+          </button>
+        </>
+      )}
+
+      {/* Chấm chọn banner */}
+      {banners.length > 1 && (
+        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2">
+          {banners.map((banner, index) => (
+            <button
+              key={banner.id ?? index}
+              type="button"
+              onClick={() => setCurrentBannerIndex(index)}
+              aria-label={`Chuyển đến banner ${index + 1}`}
+              aria-current={index === currentBannerIndex ? "true" : undefined}
+              className={`h-2.5 rounded-full transition-all duration-300 ${
+                index === currentBannerIndex
+                  ? "w-8 bg-[#a0522d]"
+                  : "w-2.5 bg-white/70 hover:bg-white"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  ) : (
+    <div className="flex min-h-[500px] items-center justify-center px-4 text-center text-stone-600">
+      {bannerError || "Chưa có banner để hiển thị."}
+    </div>
+  )}
+</section>
+
+
+      {/* GIỚI THIỆU QUÁN */}
+      <section className="bg-white py-20 lg:py-28">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 md:grid-cols-2">
           <div className="grid grid-cols-2 gap-4">
             <img
               src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80"
-              alt="Espresso machine pouring"
-              className="w-full h-64 sm:h-72 object-cover rounded-xl shadow-md"
+              alt="Pha chế cà phê"
+              className="h-64 w-full rounded-xl object-cover shadow-md sm:h-72"
             />
+
             <img
               src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&q=80"
-              alt="Barista latte art"
-              className="w-full h-64 sm:h-72 object-cover rounded-xl shadow-md mt-6"
+              alt="Nghệ thuật pha cà phê"
+              className="mt-6 h-64 w-full rounded-xl object-cover shadow-md sm:h-72"
             />
           </div>
+
           <div>
-            <span className="text-xs tracking-[3px] uppercase text-stone-400 block mb-3 font-semibold">
+            <span className="mb-3 block text-xs font-semibold uppercase tracking-[3px] text-stone-400">
               About our coffee
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-stone-900 leading-snug mb-6">
-              Arabica &amp; Robusta New<br />Exclusive Coffee.
+
+            <h2 className="mb-6 font-heading text-3xl font-bold leading-snug text-stone-900 sm:text-4xl">
+              Arabica &amp; Robusta New
+              <br />
+              Exclusive Coffee.
             </h2>
-            <p className="text-stone-600 text-sm sm:text-base leading-relaxed mb-8">
-              Chúng tôi kết hợp tinh tế giữa hạt Arabica thơm nồng quyến rũ và Robusta đậm đà đặc trưng vùng đất đỏ Tây Nguyên. Mọi khâu từ chọn hạt, rang mộc đến pha chế đều được chuẩn hóa theo tiêu chuẩn quốc tế.
+
+            <p className="mb-8 text-sm leading-relaxed text-stone-600 sm:text-base">
+              Chúng tôi chú trọng lựa chọn hạt cà phê chất lượng và mang đến
+              hương vị đặc trưng trong từng tách cà phê.
             </p>
-            <div className="flex items-center gap-4">
-              <Link
-                to="/products"
-                className="bg-[#a0522d] hover:bg-[#854324] text-white text-xs font-bold uppercase tracking-widest px-8 py-3.5 rounded shadow transition-all duration-200"
-              >
-                Shop Now
-              </Link>
-              <button
-                className="w-12 h-12 rounded-full border-2 border-stone-800 text-stone-800 hover:bg-stone-800 hover:text-white flex items-center justify-center transition-all duration-200 text-sm"
-                title="Khám phá video"
-              >
-                ▶
-              </button>
-            </div>
+
+            <Link
+              to="/products"
+              className="inline-block rounded bg-[#a0522d] px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white shadow transition-all duration-200 hover:bg-[#854324]"
+            >
+              Xem cửa hàng
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* ═══════════ RECENT PRODUCTS ═══════════ */}
-      <section className="py-20 bg-[#faf8f5] border-t border-stone-200">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-14">
-            <span className="text-xs tracking-[3px] uppercase text-stone-500 block mb-2 font-medium">
-              Discover recently
+      {/* SẢN PHẨM TỪ API */}
+      <section className="border-t border-stone-200 bg-[#faf8f5] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-14 text-center">
+            <span className="mb-2 block text-xs font-medium uppercase tracking-[3px] text-stone-500">
+              Khám phá
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl font-bold text-stone-900">
-              Recent Products
+
+            <h2 className="font-heading text-3xl font-bold text-stone-900 sm:text-4xl">
+              Sản phẩm gần đây
             </h2>
           </div>
 
           {loading ? (
-            <div className="text-center text-stone-500 py-16">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-stone-300 border-t-amber-800 mb-3"></div>
-              <p className="text-sm">Đang tải sản phẩm từ máy chủ...</p>
+            <div className="py-16 text-center text-stone-500">
+              Đang tải sản phẩm từ máy chủ...
             </div>
+          ) : productError ? (
+            <p className="py-10 text-center text-red-600">
+              {productError}
+            </p>
+          ) : products.length === 0 ? (
+            <p className="py-10 text-center text-stone-500">
+              Chưa có sản phẩm để hiển thị.
+            </p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {products.map((p) => (
-                <ProductCard key={p.id} product={p} />
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           )}
 
-          <div className="text-center mt-14">
+          <div className="mt-14 text-center">
             <Link
               to="/products"
-              className="inline-block border-2 border-stone-800 text-stone-800 hover:bg-stone-800 hover:text-white text-xs font-bold uppercase tracking-widest px-10 py-3.5 rounded transition-all duration-200"
+              className="inline-block rounded border-2 border-stone-800 px-10 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-800 transition-all duration-200 hover:bg-stone-800 hover:text-white"
             >
               Xem tất cả sản phẩm
             </Link>
