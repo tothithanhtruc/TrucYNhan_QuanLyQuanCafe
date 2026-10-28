@@ -66,6 +66,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                 // Xem danh sách danh mục không cần auth
                 .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
+                // Xem danh sách bài viết không cần auth
+                .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
+                // Xem danh sách banner không cần auth
+                .requestMatchers(HttpMethod.GET, "/api/banners", "/api/banners/**").permitAll()
+                // Gửi liên hệ không cần auth
+                .requestMatchers(HttpMethod.POST, "/api/contacts", "/api/contacts/**").permitAll()
                 // Logout endpoint
                 .requestMatchers(HttpMethod.POST, "/api/users/logout", "/api/auth/logout").permitAll()
                 // Chỉ ADMIN mới có quyền tạo danh mục 
