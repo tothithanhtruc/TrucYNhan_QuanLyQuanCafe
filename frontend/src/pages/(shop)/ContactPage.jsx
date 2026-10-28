@@ -162,7 +162,7 @@ export default function ContactPage() {
                 Gửi Tin Nhắn Cho Bickrost
               </h3>
               <p className="text-stone-500 text-xs sm:text-sm mb-6">
-                Vui lòng điền thông tin bên dưới, thông tin sẽ được lưu trực tiếp vào hệ thống để bộ phận CSKH liên hệ với bạn.
+                Vui lòng điền thông tin bên dưới. Nếu đăng nhập trước khi gửi, bạn có thể xem phản hồi của cửa hàng trong hộp thư tài khoản.
               </p>
 
               {success && (
