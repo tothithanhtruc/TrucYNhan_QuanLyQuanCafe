@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import PublicLayout from "../../layouts/PublicLayout";
-import { login } from "../../services/authApi";
+import { getCurrentUserRole, login } from "../../services/authApi";
 import { Coffee, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
@@ -22,18 +21,9 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await login(username.trim(), password);
-      // Kiểm tra vai trò nếu có trong response hoặc redirect
-      const role =
-        res.data?.role ||
-        res.data?.user?.role ||
-        res.data?.data?.role ||
-        "";
-
-      if (
-        role.toUpperCase() === "ADMIN" ||
-        username.toLowerCase().includes("admin")
-      ) {
+      await login(username.trim(), password);
+      const role = getCurrentUserRole();
+      if (role === "ADMIN") {
         navigate("/admin");
       } else {
         navigate("/shop");
@@ -49,15 +39,16 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickDemoAdmin = () => {
-    setUsername("admin");
-    setPassword("admin123");
-  };
-
   return (
-    <PublicLayout>
-      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12 bg-[#faf8f5]">
-        <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl border border-stone-200 shadow-xl shadow-stone-200/50">
+    <main className="relative min-h-screen overflow-hidden bg-stone-100">
+      <div
+        className="absolute inset-0 scale-105 bg-cover bg-center blur-sm"
+        style={{ backgroundImage: "url('/images/banner1.jpg')" }}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-white/35" aria-hidden="true" />
+      <div className="relative flex min-h-screen items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-3xl border border-white/30 bg-white/95 p-8 shadow-2xl sm:p-10">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-50 text-amber-800 mb-3 border border-amber-200/60 shadow-xs">
@@ -133,20 +124,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Admin Test Helper */}
-          <div className="mt-6 pt-5 border-t border-stone-100">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-stone-500">Chuyển nhanh tới Admin:</span>
-              <Link
-                to="/admin"
-                className="text-xs font-bold text-amber-800 hover:text-amber-900 underline"
-              >
-                Vào thẳng Admin Portal &rarr;
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
-    </PublicLayout>
+    </main>
   );
 }

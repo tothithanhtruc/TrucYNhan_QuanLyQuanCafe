@@ -89,8 +89,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/categories", "/api/categories/**").hasRole("ADMIN")
                 // Chỉ ADMIN mới có quyền tạo sản phẩm 
                 .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**").hasRole("ADMIN")
-                // Xem danh sách người dùng yêu cầu quyền USER hoặc ADMIN )
-                .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/topics", "/api/topics/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/orders", "/api/orders/**", "/api/tables", "/api/tables/**").hasRole("ADMIN")
                 // Mọi request còn lại yêu cầu xác thực
                 .anyRequest().authenticated()
         );

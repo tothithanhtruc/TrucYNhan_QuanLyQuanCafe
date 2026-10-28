@@ -22,6 +22,7 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminContactsPage from "./pages/admin/AdminContactsPage";
 import AdminTrashPage from "./pages/admin/AdminTrashPage";
 import AdminPostsPage from "./pages/admin/AdminPostsPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 
 export default function App() {
@@ -51,6 +52,44 @@ export default function App() {
         <Route path="/inbox" element={<ContactInboxPage />} />
 
         {/* Quản trị (Admin) */}
+
+        <Route
+          path="/admin"
+          element={<ProtectedRoute adminOnly><DashboardPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/dashboard"
+          element={<ProtectedRoute adminOnly><DashboardPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/products"
+          element={<ProtectedRoute adminOnly><AdminProductsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/categories"
+          element={<ProtectedRoute adminOnly><AdminCategoriesPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/orders"
+          element={<ProtectedRoute adminOnly><AdminOrdersPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/tables"
+          element={<ProtectedRoute adminOnly><AdminTablesPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/users"
+          element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/trash"
+          element={<ProtectedRoute adminOnly><AdminTrashPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/posts"
+          element={<ProtectedRoute adminOnly><AdminPostsPage /></ProtectedRoute>}
+        />
+
         <Route path="/admin" element={<DashboardPage />} />
         <Route path="/admin/dashboard" element={<DashboardPage />} />
         <Route path="/admin/products" element={<AdminProductsPage />} />
@@ -62,6 +101,7 @@ export default function App() {
         <Route path="/admin/contacts" element={<AdminContactsPage />} />
         <Route path="/admin/trash" element={<AdminTrashPage />} />
         <Route path="/admin/posts" element={<AdminPostsPage />} />
+
 
         {/* Fallback route */}
         <Route path="*" element={<Navigate to="/" replace />} />
