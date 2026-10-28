@@ -19,12 +19,15 @@ import {
   adminCreateUser,
   adminUpdateUser,
 } from "../../services/adminApi";
+import Pagination from "../../components/Pagination";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize =5;
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,6 +51,10 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, roleFilter]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -149,6 +156,15 @@ export default function AdminUsersPage() {
 
     return matchSearch && matchRole;
   });
+  const totalPages = Math.ceil(filteredUsers.length / pageSize);
+  const paginatedUsers = filteredUsers.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   const getRoleBadge = (role) => {
     const r = (role || "CUSTOMER").toUpperCase();
@@ -285,7 +301,7 @@ export default function AdminUsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((u) => (
+                  paginatedUsers.map((u) => (
                     <tr key={u.id} className="hover:bg-stone-50/80 transition">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
@@ -346,6 +362,14 @@ export default function AdminUsersPage() {
             </table>
           </div>
         </div>
+
+        {!loading && filteredUsers.length > 0 && totalPages > 1 && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        )}
 
         {/* Modal Thêm / Sửa Người Dùng */}
         {isModalOpen && (

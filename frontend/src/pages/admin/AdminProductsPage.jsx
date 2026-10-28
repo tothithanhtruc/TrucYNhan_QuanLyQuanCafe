@@ -23,11 +23,13 @@ import {
   adminUploadImage,
 } from "../../services/adminApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
-
+import Pagination from "../../components/Pagination";
 export default function AdminProductsPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 10; 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -56,10 +58,15 @@ export default function AdminProductsPage() {
   const [notification, setNotification] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Tải sản phẩm và danh mục khi mở trang
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Khi tìm kiếm hoặc lọc danh mục thì quay về trang 1
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, selectedCategory]);
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -217,18 +224,24 @@ export default function AdminProductsPage() {
       String(productCatId) === String(selectedCategory);
     return matchSearch && matchCat;
   });
+  // Tổng số trang sau khi lọc
+  const totalPages = Math.ceil(filteredProducts.length / pageSize);
 
+  // Danh sách sản phẩm của trang hiện tại
+  const paginatedProducts = filteredProducts.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
   return (
     <AdminLayout title="Quản Lý Sản Phẩm">
       <div className="space-y-6">
         {/* Notification Toast */}
         {notification && (
           <div
-            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${
-              notification.type === "error"
-                ? "bg-rose-50 text-rose-800 border-rose-200"
-                : "bg-emerald-50 text-emerald-800 border-emerald-200"
-            }`}
+            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${notification.type === "error"
+              ? "bg-rose-50 text-rose-800 border-rose-200"
+              : "bg-emerald-50 text-emerald-800 border-emerald-200"
+              }`}
           >
             {notification.type === "error" ? (
               <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -338,7 +351,7 @@ export default function AdminProductsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map((p) => {
+                  paginatedProducts.map((p) => {
                     const catName =
                       p.category?.name ||
                       categories.find((c) => c.id === p.categoryId)?.name ||
@@ -447,8 +460,14 @@ export default function AdminProductsPage() {
               </tbody>
             </table>
           </div>
-        </div>
 
+        </div>
+        {/* Phân trang */}
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
         {/* Modal Thêm / Sửa Sản Phẩm */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -691,8 +710,8 @@ export default function AdminProductsPage() {
                     {submitting
                       ? "Đang lưu..."
                       : editingProduct
-                      ? "Lưu Thay Đổi"
-                      : "Thêm Món"}
+                        ? "Lưu Thay Đổi"
+                        : "Thêm Món"}
                   </button>
                 </div>
               </form>
@@ -726,9 +745,12 @@ export default function AdminProductsPage() {
                 </button>
               </div>
             </div>
+
           </div>
         )}
+
       </div>
+
     </AdminLayout>
   );
 }

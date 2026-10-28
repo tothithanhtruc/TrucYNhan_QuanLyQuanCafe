@@ -22,6 +22,9 @@ import {
   adminUpdatePost,
   adminUploadImage,
 } from "../../services/adminApi";
+import Pagination from "../../components/Pagination";
+
+
 
 const emptyForm = {
   title: "",
@@ -46,7 +49,9 @@ export default function AdminPostsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-
+  // Phân trang
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
   const showNotice = (message, type = "success") => {
     setNotice({ message, type });
     setTimeout(() => setNotice(null), 3500);
@@ -90,6 +95,10 @@ export default function AdminPostsPage() {
     loadData();
   }, [tab]);
 
+  // Đổi tab hoặc tìm kiếm thì quay về trang đầu
+  useEffect(() => {
+    setPage(1);
+  }, [tab, search]);
   const openCreate = () => {
     setEditingPost(null);
     setForm({ ...emptyForm, topicId: topics[0]?.id || "" });
@@ -188,16 +197,27 @@ export default function AdminPostsPage() {
   const filteredPosts = posts.filter((post) =>
     `${post.title || ""} ${post.summary || ""}`.toLowerCase().includes(search.toLowerCase())
   );
+  // Tổng số trang
+  const totalPages = Math.ceil(filteredPosts.length / pageSize);
+
+  // Danh sách bài viết của trang hiện tại
+  const paginatedPosts = filteredPosts.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, Math.max(totalPages, 1)));
+  }, [totalPages]);
 
   return (
     <AdminLayout title="Quản Lý Bài Viết">
       <div className="space-y-6">
         {notice && (
-          <div className={`fixed bottom-6 right-6 z-50 rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg ${
-            notice.type === "error"
-              ? "border-rose-200 bg-rose-50 text-rose-800"
-              : "border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}>
+          <div className={`fixed bottom-6 right-6 z-50 rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg ${notice.type === "error"
+            ? "border-rose-200 bg-rose-50 text-rose-800"
+            : "border-emerald-200 bg-emerald-50 text-emerald-800"
+            }`}>
             {notice.message}
           </div>
         )}
@@ -211,7 +231,7 @@ export default function AdminPostsPage() {
             <button onClick={loadData} title="Làm mới" className="rounded-xl border border-stone-200 bg-white p-2.5 text-stone-600 hover:bg-stone-50">
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </button>
-          
+
             {tab === "active" && (
               <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-800">
                 <Plus className="h-4 w-4" /> Thêm bài viết
@@ -242,7 +262,7 @@ export default function AdminPostsPage() {
             <div className="py-16 text-center text-stone-400">Không có bài viết nào</div>
           ) : (
             <div className="divide-y divide-stone-100">
-              {filteredPosts.map((post) => (
+              {paginatedPosts.map((post) => (
                 <div key={post.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-stone-100 text-stone-400">
@@ -271,8 +291,17 @@ export default function AdminPostsPage() {
             </div>
           )}
         </div>
+        {/* Phân trang */}
+        {!loading && filteredPosts.length > 0 && totalPages > 1 && (
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        )}
 
         {modalOpen && (
+
           <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-stone-900/60 p-4">
             <form onSubmit={submit} className="my-8 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
               <div className="mb-5 flex items-center justify-between border-b border-stone-100 pb-4">
@@ -325,7 +354,9 @@ export default function AdminPostsPage() {
             </form>
           </div>
         )}
+
       </div>
+
     </AdminLayout>
   );
 }
