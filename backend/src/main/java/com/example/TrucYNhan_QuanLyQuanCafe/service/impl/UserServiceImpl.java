@@ -76,6 +76,8 @@ public class UserServiceImpl implements UserService {
         existing.setFullName(user.getFullName());
         existing.setEmail(user.getEmail());
         existing.setPhone(user.getPhone());
+        existing.setAddress(user.getAddress());
+        existing.setGender(user.getGender());
         existing.setRole(user.getRole());
         existing.setImage(user.getImage());
         existing.setStatus(user.getStatus());
@@ -118,5 +120,16 @@ public class UserServiceImpl implements UserService {
         user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
+    }
+
+    @Override
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng: " + username));
+    }
+
+    @Override
+    public User saveUser(User user) {
+        return userRepository.save(user);
     }
 }

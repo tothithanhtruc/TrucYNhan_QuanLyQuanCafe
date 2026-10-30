@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Search,
   Heart,
@@ -10,21 +10,25 @@ import {
 } from "lucide-react";
 
 import SearchModal from "./SearchModal";
+import { isLoggedIn, logout } from "../services/authApi";
 import {
   CART_UPDATED_EVENT,
   getCartItemCount,
 } from "../services/cartApi";
 
 export default function Navbar() {
+  const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [authenticated, setAuthenticated] = useState(isLoggedIn);
 
   // Đồng bộ số lượng sản phẩm trong giỏ hàng
   useEffect(() => {
     const updateCartCount = () => {
       setCartCount(getCartItemCount());
     };
+    const updateAuthentication = () => setAuthenticated(isLoggedIn());
 
     // Cập nhật lần đầu
     updateCartCount();
@@ -32,14 +36,23 @@ export default function Navbar() {
     // Lắng nghe sự kiện thay đổi giỏ hàng
     window.addEventListener(CART_UPDATED_EVENT, updateCartCount);
     window.addEventListener("auth-changed", updateCartCount);
+    window.addEventListener("auth-changed", updateAuthentication);
     window.addEventListener("storage", updateCartCount);
 
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, updateCartCount);
       window.removeEventListener("auth-changed", updateCartCount);
+      window.removeEventListener("auth-changed", updateAuthentication);
       window.removeEventListener("storage", updateCartCount);
     };
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    setAuthenticated(false);
+    setIsUserMenuOpen(false);
+    navigate("/login");
+  };
 
   const navItems = [
     { to: "/", label: "Home", end: true },
@@ -140,29 +153,41 @@ export default function Navbar() {
               {isUserMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-2 shadow-lg">
 
-                  <Link
-                    to="/login"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
-                  >
-                    Đăng nhập
-                  </Link>
-
-                  <Link
-                    to="/register"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
-                  >
-                    Đăng ký
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block w-full px-4 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50"
-                  >
-                    Đăng xuất
-                  </button>
+                  {authenticated ? (
+                    <>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
+                      >
+                        Hồ sơ của tôi
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="block w-full px-4 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50"
+                      >
+                        Đăng xuất
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
+                      >
+                        Đăng nhập
+                      </Link>
+                      <Link
+                        to="/register"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
+                      >
+                        Đăng ký
+                      </Link>
+                    </>
+                  )}
                 </div>
               )}
             </div>

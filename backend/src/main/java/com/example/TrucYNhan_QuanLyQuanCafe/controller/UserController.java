@@ -38,11 +38,61 @@ public class UserController {
                 user.getFullName(),
                 user.getEmail(),
                 user.getPhone(),
+                user.getAddress(),
+                user.getGender(),
+                user.getImage(),
                 user.getRole(),
                 user.getStatus(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );
+    }
+
+    // Lấy thông tin người dùng đang đăng nhập
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        try {
+            if (authentication == null) {
+                return errorResponse(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập");
+            }
+            User user = userService.getUserByUsername(authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Lấy thông tin cá nhân thành công",
+                    "data", toResponse(user)
+            ));
+        } catch (RuntimeException e) {
+            return errorResponse(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
+
+    // Cập nhật hồ sơ cá nhân
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMyProfile(
+            Authentication authentication,
+            @RequestBody User user) {
+        try {
+            if (authentication == null) {
+                return errorResponse(HttpStatus.UNAUTHORIZED, "Chưa đăng nhập");
+            }
+            User current = userService.getUserByUsername(authentication.getName());
+            // Chỉ cho phép cập nhật thông tin cá nhân, không cho đổi role/status
+            current.setFullName(user.getFullName());
+            current.setEmail(user.getEmail());
+            current.setPhone(user.getPhone());
+            current.setAddress(user.getAddress());
+            current.setGender(user.getGender());
+            current.setImage(user.getImage());
+            current.setUpdatedAt(java.time.LocalDateTime.now());
+            User updated = userService.saveUser(current);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Cập nhật hồ sơ thành công",
+                    "data", toResponse(updated)
+            ));
+        } catch (RuntimeException e) {
+            return errorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 
     // Đăng ký người dùng mới (No Auth)
