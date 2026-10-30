@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentUserRole, login } from "../../services/authApi";
 import { Coffee, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
 
@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -23,11 +24,13 @@ export default function LoginPage() {
     try {
       await login(username.trim(), password);
       const role = getCurrentUserRole();
-      if (role === "ADMIN") {
-        navigate("/admin");
-      } else {
-        navigate("/shop");
-      }
+      const defaultDestination = role === "ADMIN" ? "/admin" : "/shop";
+      navigate(location.state?.from || defaultDestination, {
+        replace: true,
+        state: location.state?.pendingCartAction
+          ? { pendingCartAction: location.state.pendingCartAction }
+          : null,
+      });
     } catch (err) {
       console.error("Lỗi đăng nhập:", err);
       const msg =
@@ -124,6 +127,21 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {location.state?.message && (
+            <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">
+              {location.state.message}
+            </p>
+          )}
+          <p className="mt-6 text-center text-sm text-stone-500">
+            Chưa có tài khoản?{" "}
+            <Link
+              to="/register"
+              state={location.state}
+              className="font-bold text-amber-800 hover:text-amber-900"
+            >
+              Đăng ký
+            </Link>
+          </p>
         </div>
       </div>
     </main>

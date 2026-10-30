@@ -1,6 +1,7 @@
 package com.example.TrucYNhan_QuanLyQuanCafe.mapper;
 
 import com.example.TrucYNhan_QuanLyQuanCafe.dto.OrderRequest;
+import com.example.TrucYNhan_QuanLyQuanCafe.dto.OrderItemResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.dto.OrderResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Order;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,14 @@ public class OrderMapper {
                 order.getDeliveryAddress(),
                 order.getStatus(),
                 order.getNote(),
+                order.getItems().stream()
+                        .map(item -> new OrderItemResponse(
+                                item.getProduct().getId(),
+                                item.getProductName(),
+                                item.getQuantity(),
+                                item.getUnitPrice(),
+                                item.getSubtotal()))
+                        .toList(),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 order.getDeletedAt()
