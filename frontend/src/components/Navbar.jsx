@@ -10,31 +10,34 @@ import {
 } from "lucide-react";
 
 import SearchModal from "./SearchModal";
-import { CART_UPDATED_EVENT, getCartItemCount } from "../services/cartApi";
-
-import { CART_UPDATED_EVENT, getCartItemCount } from "../utils/cart";
+import {
+  CART_UPDATED_EVENT,
+  getCartItemCount,
+} from "../services/cartApi";
 
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
+  // Đồng bộ số lượng sản phẩm trong giỏ hàng
   useEffect(() => {
-    const updateCartCount = () => setCartCount(getCartItemCount());
+    const updateCartCount = () => {
+      setCartCount(getCartItemCount());
+    };
+
+    // Cập nhật lần đầu
     updateCartCount();
+
+    // Lắng nghe sự kiện thay đổi giỏ hàng
     window.addEventListener(CART_UPDATED_EVENT, updateCartCount);
     window.addEventListener("auth-changed", updateCartCount);
+    window.addEventListener("storage", updateCartCount);
+
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, updateCartCount);
       window.removeEventListener("auth-changed", updateCartCount);
-
-    const syncCartCount = () => setCartCount(getCartItemCount());
-    syncCartCount();
-    window.addEventListener(CART_UPDATED_EVENT, syncCartCount);
-    window.addEventListener("storage", syncCartCount);
-    return () => {
-      window.removeEventListener(CART_UPDATED_EVENT, syncCartCount);
-      window.removeEventListener("storage", syncCartCount);
+      window.removeEventListener("storage", updateCartCount);
     };
   }, []);
 
@@ -50,6 +53,7 @@ export default function Navbar() {
     <>
       <nav className="sticky top-0 z-40 border-b border-stone-200 bg-white shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+
           {/* Logo */}
           <Link
             to="/"
@@ -66,9 +70,10 @@ export default function Navbar() {
                   to={to}
                   end={end}
                   className={({ isActive }) =>
-                    `border-b-2 pb-1 text-xs font-bold uppercase tracking-wider transition-colors ${isActive
-                      ? "border-amber-800 text-amber-800"
-                      : "border-transparent text-stone-700 hover:text-amber-800"
+                    `border-b-2 pb-1 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      isActive
+                        ? "border-amber-800 text-amber-800"
+                        : "border-transparent text-stone-700 hover:text-amber-800"
                     }`
                   }
                 >
@@ -80,6 +85,7 @@ export default function Navbar() {
 
           {/* Các nút chức năng */}
           <div className="flex items-center gap-3">
+
             {/* Tìm kiếm */}
             <button
               type="button"
@@ -88,25 +94,19 @@ export default function Navbar() {
               aria-label="Tìm kiếm sản phẩm"
               title="Tìm kiếm"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-5 w-5"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m16 16 4 4" />
-              </svg>
+              <Search className="h-5 w-5" />
             </button>
+
+            {/* Hộp thư */}
             <Link
               to="/inbox"
               onClick={() => setIsUserMenuOpen(false)}
               className="rounded-full bg-amber-50 p-2.5 text-amber-900 transition hover:bg-amber-100 sm:p-3"
+              aria-label="Hộp thư"
             >
               <Mail className="h-4 w-4" />
-
             </Link>
+
             {/* Giỏ hàng */}
             <Link
               to="/cart"
@@ -114,16 +114,7 @@ export default function Navbar() {
               aria-label="Giỏ hàng"
               title="Giỏ hàng"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-5 w-5"
-              >
-                <path d="M5 8h14l1 12H4L5 8Z" />
-                <path d="M9 8V6a3 3 0 0 1 6 0v2" />
-              </svg>
+              <ShoppingBag className="h-5 w-5" />
 
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-800 px-1 text-[10px] font-bold text-white ring-2 ring-white">
                 {cartCount}
@@ -142,24 +133,12 @@ export default function Navbar() {
                 aria-expanded={isUserMenuOpen}
                 title="Tài khoản"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-5 w-5"
-                >
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21a8 8 0 0 1 16 0" />
-                </svg>
+                <UserRound className="h-5 w-5" />
               </button>
 
               {/* Menu tài khoản */}
               {isUserMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-2 shadow-lg">
-
-
-
 
                   <Link
                     to="/login"
@@ -187,11 +166,8 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-
           </div>
-
         </div>
-
       </nav>
 
       {/* Hộp tìm kiếm */}
