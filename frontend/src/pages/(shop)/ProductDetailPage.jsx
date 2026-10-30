@@ -1,16 +1,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
+
+
 import PublicLayout from "../../layouts/PublicLayout";
 import ProductCard from "../../components/ProductCard";
 import { getProductById, getProducts } from "../../services/productApi";
 import { isLoggedIn } from "../../services/authApi";
 import { addToCart } from "../../services/cartApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
+import { addToCart } from "../../utils/cart";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const location = useLocation();
+
   const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
@@ -211,6 +215,24 @@ export default function ProductDetailPage() {
     }
   };
 
+  const cartProduct = {
+    id: product.id,
+    name: product.name,
+    price: currentPrice,
+    image: product.image,
+    stock,
+    unit: product.unit,
+  };
+
+  const handleAddToCart = () => {
+    addToCart(cartProduct, quantity);
+  };
+
+  const handleBuyNow = () => {
+    addToCart(cartProduct, quantity);
+    navigate("/cart");
+  };
+
   return (
     <PublicLayout>
       {/* Đường dẫn điều hướng */}
@@ -388,6 +410,25 @@ export default function ProductDetailPage() {
                 <p className="mb-6 font-medium text-red-600">
                   Sản phẩm hiện đã hết hàng.
                 </p>
+              )}
+
+              {stock > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="rounded-lg border border-amber-800 px-6 py-3 font-semibold text-amber-800 transition hover:bg-amber-50"
+                  >
+                    Thêm vào giỏ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    className="rounded-lg bg-amber-800 px-6 py-3 font-semibold text-white transition hover:bg-amber-700"
+                  >
+                    Mua ngay
+                  </button>
+                </div>
               )}
             </div>
           </div>

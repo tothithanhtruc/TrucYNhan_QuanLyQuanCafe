@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { Link, useNavigate } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import { checkout } from "../../services/orderApi";
@@ -8,6 +9,10 @@ import {
   removeFromCart,
   updateCartQuantity,
 } from "../../services/cartApi";
+
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+
+
 import { formatCurrency, resolveProductImage } from "../../utils/format";
 
 export default function CartPage() {
@@ -80,10 +85,12 @@ export default function CartPage() {
     } finally {
       setSubmitting(false);
     }
+
   };
 
   return (
     <PublicLayout>
+
       <main className="mx-auto max-w-5xl px-4 py-12">
         <h1 className="mb-8 text-3xl font-bold text-stone-900">Giỏ hàng</h1>
 
@@ -210,6 +217,7 @@ export default function CartPage() {
           </div>
         )}
       </main>
+
     </PublicLayout>
   );
 }

@@ -11,6 +11,9 @@ import {
 
 import SearchModal from "./SearchModal";
 import { CART_UPDATED_EVENT, getCartItemCount } from "../services/cartApi";
+
+import { CART_UPDATED_EVENT, getCartItemCount } from "../utils/cart";
+
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -24,6 +27,14 @@ export default function Navbar() {
     return () => {
       window.removeEventListener(CART_UPDATED_EVENT, updateCartCount);
       window.removeEventListener("auth-changed", updateCartCount);
+
+    const syncCartCount = () => setCartCount(getCartItemCount());
+    syncCartCount();
+    window.addEventListener(CART_UPDATED_EVENT, syncCartCount);
+    window.addEventListener("storage", syncCartCount);
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, syncCartCount);
+      window.removeEventListener("storage", syncCartCount);
     };
   }, []);
 
