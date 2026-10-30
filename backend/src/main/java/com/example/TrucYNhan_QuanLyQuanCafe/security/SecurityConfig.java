@@ -62,6 +62,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
                 // Đăng nhập JWT không cần auth (J02)
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/orders/checkout").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/orders").hasRole("ADMIN")
                 // Xem danh sách sản phẩm không cần auth 
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                 // Xem danh sách danh mục không cần auth

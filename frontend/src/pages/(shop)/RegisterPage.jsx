@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { AlertCircle, ArrowRight, Coffee, Lock, User } from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
 import { register } from "../../services/authApi";
@@ -14,6 +14,7 @@ const initialForm = {
 };
 
 export default function RegisterPage() {
+  const location = useLocation();
   const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -80,6 +81,7 @@ export default function RegisterPage() {
               </div>
               <Link
                 to="/login"
+                state={location.state}
                 className="w-full py-3.5 px-4 bg-amber-800 hover:bg-amber-900 text-white text-sm font-bold rounded-xl shadow-md transition inline-flex items-center justify-center gap-2"
               >
                 Đến trang đăng nhập
@@ -244,6 +246,7 @@ export default function RegisterPage() {
                 Đã có tài khoản?{" "}
                 <Link
                   to="/login"
+                  state={location.state}
                   className="font-bold text-amber-800 hover:text-amber-900"
                 >
                   Đăng nhập

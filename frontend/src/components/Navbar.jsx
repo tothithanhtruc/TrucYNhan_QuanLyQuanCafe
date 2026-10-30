@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import {
   Search,
@@ -10,9 +10,22 @@ import {
 } from "lucide-react";
 
 import SearchModal from "./SearchModal";
+import { CART_UPDATED_EVENT, getCartItemCount } from "../services/cartApi";
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const updateCartCount = () => setCartCount(getCartItemCount());
+    updateCartCount();
+    window.addEventListener(CART_UPDATED_EVENT, updateCartCount);
+    window.addEventListener("auth-changed", updateCartCount);
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, updateCartCount);
+      window.removeEventListener("auth-changed", updateCartCount);
+    };
+  }, []);
 
   const navItems = [
     { to: "/", label: "Home", end: true },
@@ -42,10 +55,9 @@ export default function Navbar() {
                   to={to}
                   end={end}
                   className={({ isActive }) =>
-                    `border-b-2 pb-1 text-xs font-bold uppercase tracking-wider transition-colors ${
-                      isActive
-                        ? "border-amber-800 text-amber-800"
-                        : "border-transparent text-stone-700 hover:text-amber-800"
+                    `border-b-2 pb-1 text-xs font-bold uppercase tracking-wider transition-colors ${isActive
+                      ? "border-amber-800 text-amber-800"
+                      : "border-transparent text-stone-700 hover:text-amber-800"
                     }`
                   }
                 >
@@ -76,7 +88,14 @@ export default function Navbar() {
                 <path d="m16 16 4 4" />
               </svg>
             </button>
+            <Link
+              to="/inbox"
+              onClick={() => setIsUserMenuOpen(false)}
+              className="rounded-full bg-amber-50 p-2.5 text-amber-900 transition hover:bg-amber-100 sm:p-3"
+            >
+              <Mail className="h-4 w-4" />
 
+            </Link>
             {/* Giỏ hàng */}
             <Link
               to="/cart"
@@ -96,7 +115,7 @@ export default function Navbar() {
               </svg>
 
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-800 px-1 text-[10px] font-bold text-white ring-2 ring-white">
-                0
+                {cartCount}
               </span>
             </Link>
 
@@ -127,22 +146,9 @@ export default function Navbar() {
               {/* Menu tài khoản */}
               {isUserMenuOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-stone-200 bg-white py-2 shadow-lg">
-                  <Link
-                    to="/admin"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm font-semibold text-amber-900 bg-amber-50/70 border-b border-stone-100 transition hover:bg-amber-100"
-                  >
-                    Trang Quản Trị (Admin)
-                  </Link>
 
-                  <Link
-                    to="/inbox"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
-                  >
-                    <Mail className="h-4 w-4" />
-                    Hộp thư phản hồi
-                  </Link>
+
+
 
                   <Link
                     to="/login"
@@ -170,8 +176,11 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+
           </div>
+
         </div>
+
       </nav>
 
       {/* Hộp tìm kiếm */}

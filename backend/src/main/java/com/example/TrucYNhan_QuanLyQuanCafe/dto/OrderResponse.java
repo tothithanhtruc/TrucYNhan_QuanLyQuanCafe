@@ -2,6 +2,7 @@ package com.example.TrucYNhan_QuanLyQuanCafe.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record OrderResponse(
         Long id,
@@ -19,6 +20,7 @@ public record OrderResponse(
         String deliveryAddress,
         String status,
         String note,
+        List<OrderItemResponse> items,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         LocalDateTime deletedAt

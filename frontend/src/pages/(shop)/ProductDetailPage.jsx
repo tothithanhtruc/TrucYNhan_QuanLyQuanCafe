@@ -1,19 +1,25 @@
 
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import ProductCard from "../../components/ProductCard";
 import { getProductById, getProducts } from "../../services/productApi";
+import { isLoggedIn } from "../../services/authApi";
+import { addToCart } from "../../services/cartApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [cartMessage, setCartMessage] = useState("");
+  const resumedCartAction = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +94,30 @@ export default function ProductDetailPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    const pendingAction = location.state?.pendingCartAction;
+    if (!product || !pendingAction || resumedCartAction.current) return;
+
+    resumedCartAction.current = true;
+    navigate(location.pathname, { replace: true, state: null });
+    try {
+      const productPrice = Number(product.price ?? 0);
+      const salePrice = Number(product.salePrice ?? 0);
+      addToCart({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        price: salePrice > 0 && salePrice < productPrice ? salePrice : productPrice,
+        stock: Number(product.quantity ?? 0),
+      }, pendingAction.quantity);
+
+      if (pendingAction.buyNow) navigate("/cart");
+      else setCartMessage("Đã thêm sản phẩm vào giỏ hàng.");
+    } catch (cartError) {
+      setCartMessage(cartError.message);
+    }
+  }, [location.pathname, location.state, navigate, product]);
+
   if (loading) {
     return (
       <PublicLayout>
@@ -129,6 +159,33 @@ export default function ProductDetailPage() {
       : null;
 
   const currentPrice = salePrice ?? price;
+  const addCurrentProductToCart = (buyNow = false) => {
+    if (!isLoggedIn()) {
+      navigate("/login", {
+        state: {
+          from: location.pathname,
+          message: "Vui lòng đăng nhập hoặc đăng ký để mua hàng.",
+          pendingCartAction: { quantity, buyNow },
+        },
+      });
+      return false;
+    }
+
+    try {
+      addToCart({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        price: currentPrice,
+        stock,
+      }, quantity);
+      setCartMessage("Đã thêm sản phẩm vào giỏ hàng.");
+      return true;
+    } catch (cartError) {
+      setCartMessage(cartError.message);
+      return false;
+    }
+  };
 
   const categoryName =
     typeof product.category === "object" &&
@@ -299,6 +356,32 @@ export default function ProductDetailPage() {
                     </button>
                   </div>
                 </div>
+              )}
+
+              {stock > 0 && (
+                <div className="mb-6 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={addCurrentProductToCart}
+                    className="rounded-lg border border-amber-800 px-5 py-3 text-sm font-bold text-amber-900 transition hover:bg-amber-50"
+                  >
+                    Thêm vào giỏ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (addCurrentProductToCart(true)) navigate("/cart");
+                    }}
+                    className="rounded-lg bg-amber-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-amber-900"
+                  >
+                    Mua ngay
+                  </button>
+                </div>
+              )}
+              {cartMessage && (
+                <p className="mb-5 text-sm font-medium text-amber-900" role="status">
+                  {cartMessage}
+                </p>
               )}
 
               {stock <= 0 && product.quantity != null && (

@@ -21,10 +21,8 @@ public class JwtService {
     @Value("${jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
     private String secretKey;
 
-    @Value("${jwt.expiration-ms:86400000}")
+    @Value("${jwt.expiration-ms:604800000}")
     private long jwtExpirationMs;
-    // @Value("${jwt.expiration-ms:5000}")
-    // private long jwtExpirationMs;
 
     public long getExpirationMs() {
         return jwtExpirationMs;
