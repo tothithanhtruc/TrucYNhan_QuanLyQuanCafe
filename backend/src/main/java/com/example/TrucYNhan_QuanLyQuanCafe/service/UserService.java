@@ -23,4 +23,7 @@ public interface UserService {
     void forceDeleteUser(Long id); /// xóa vĩnh viễn
 
     void restoreUser(Long id); //khôi phục
+
+    User getUserByUsername(String username);
+    User saveUser(User user);
 }

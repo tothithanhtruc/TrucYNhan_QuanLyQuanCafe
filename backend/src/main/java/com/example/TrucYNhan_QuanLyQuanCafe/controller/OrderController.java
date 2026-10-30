@@ -61,6 +61,15 @@ public class OrderController {
         ));
     }
 
+    @GetMapping("/my-orders")
+    public ResponseEntity<Map<String, Object>> getMyOrders(Authentication authentication) {
+        List<OrderResponse> orders = orderService.getByUsername(authentication.getName());
+        return ResponseEntity.ok(Map.of(
+                "message", "Láº¥y Ä‘Æ¡n hÃ ng cÃ¡ nhÃ¢n thÃ nh cÃ´ng",
+                "data", orders
+        ));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> update(
             @PathVariable Long id,

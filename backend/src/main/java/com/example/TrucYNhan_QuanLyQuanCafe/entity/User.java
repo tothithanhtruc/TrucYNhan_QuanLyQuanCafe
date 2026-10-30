@@ -29,6 +29,12 @@ public class User {
     @Column(name = "phone")
     private String phone;
 
+    @Column(name = "address", length = 255)
+    private String address;
+
+    @Column(name = "gender", length = 20)
+    private String gender;
+
     @Column(name = "role")
     private String role;
 
@@ -93,6 +99,22 @@ public class User {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
     }
 
     public String getRole() {
