@@ -1,20 +1,31 @@
 
 import { useEffect, useRef, useState } from "react";
-import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
-
+import {
+  useParams,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import PublicLayout from "../../layouts/PublicLayout";
 import ProductCard from "../../components/ProductCard";
-import { getProductById, getProducts } from "../../services/productApi";
+
+import {
+  getProductById,
+  getProducts,
+} from "../../services/productApi";
+
 import { isLoggedIn } from "../../services/authApi";
 import { addToCart } from "../../services/cartApi";
-import { formatCurrency, resolveProductImage } from "../../utils/format";
-import { addToCart } from "../../utils/cart";
+
+import {
+  formatCurrency,
+  resolveProductImage,
+} from "../../utils/format";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const location = useLocation();
-
   const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
@@ -23,8 +34,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cartMessage, setCartMessage] = useState("");
+
   const resumedCartAction = useRef(false);
 
+  // Lấy thông tin sản phẩm
   useEffect(() => {
     let cancelled = false;
 
@@ -34,6 +47,8 @@ export default function ProductDetailPage() {
       setProduct(null);
       setRelated([]);
       setQuantity(1);
+      setCartMessage("");
+      resumedCartAction.current = false;
 
       window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -55,13 +70,14 @@ export default function ProductDetailPage() {
 
         setProduct(currentProduct);
 
-        // Lấy danh sách sản phẩm từ backend
+        // Lấy danh sách sản phẩm liên quan
         try {
           const listRes = await getProducts();
 
           if (cancelled) return;
 
-          const list = listRes.data?.data ?? listRes.data;
+          const list =
+            listRes.data?.data ?? listRes.data;
 
           if (Array.isArray(list)) {
             setRelated(
@@ -76,13 +92,18 @@ export default function ProductDetailPage() {
             );
           }
         } catch (err) {
-          console.error("Không tải được danh sách sản phẩm:", err);
+          console.error(
+            "Không tải được danh sách sản phẩm:",
+            err
+          );
         }
       } catch (err) {
         console.error("Lỗi tải chi tiết sản phẩm:", err);
 
         if (!cancelled) {
-          setError("Không thể tải thông tin sản phẩm từ máy chủ.");
+          setError(
+            "Không thể tải thông tin sản phẩm từ máy chủ."
+          );
         }
       } finally {
         if (!cancelled) {
@@ -98,30 +119,67 @@ export default function ProductDetailPage() {
     };
   }, [id]);
 
+  // Khôi phục thao tác thêm giỏ hàng sau khi đăng nhập
   useEffect(() => {
-    const pendingAction = location.state?.pendingCartAction;
-    if (!product || !pendingAction || resumedCartAction.current) return;
+    const pendingAction =
+      location.state?.pendingCartAction;
+
+    if (
+      !product ||
+      !pendingAction ||
+      resumedCartAction.current
+    ) {
+      return;
+    }
 
     resumedCartAction.current = true;
-    navigate(location.pathname, { replace: true, state: null });
-    try {
-      const productPrice = Number(product.price ?? 0);
-      const salePrice = Number(product.salePrice ?? 0);
-      addToCart({
-        id: product.id,
-        name: product.name,
-        image: product.image,
-        price: salePrice > 0 && salePrice < productPrice ? salePrice : productPrice,
-        stock: Number(product.quantity ?? 0),
-      }, pendingAction.quantity);
 
-      if (pendingAction.buyNow) navigate("/cart");
-      else setCartMessage("Đã thêm sản phẩm vào giỏ hàng.");
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+
+    const price = Number(product.price ?? 0);
+    const salePrice = Number(
+      product.salePrice ?? product.sale_price ?? 0
+    );
+
+    const currentPrice =
+      salePrice > 0 && salePrice < price
+        ? salePrice
+        : price;
+
+    try {
+      addToCart(
+        {
+          id: product.id,
+          name: product.name,
+          image: product.image,
+          price: currentPrice,
+          stock: Number(product.quantity ?? 0),
+          unit: product.unit,
+        },
+        pendingAction.quantity
+      );
+
+      if (pendingAction.buyNow) {
+        navigate("/cart");
+      } else {
+        setCartMessage(
+          "Đã thêm sản phẩm vào giỏ hàng."
+        );
+      }
     } catch (cartError) {
       setCartMessage(cartError.message);
     }
-  }, [location.pathname, location.state, navigate, product]);
+  }, [
+    location.pathname,
+    location.state,
+    navigate,
+    product,
+  ]);
 
+  // Trạng thái tải dữ liệu
   if (loading) {
     return (
       <PublicLayout>
@@ -134,6 +192,7 @@ export default function ProductDetailPage() {
     );
   }
 
+  // Không tìm thấy sản phẩm
   if (error || !product) {
     return (
       <PublicLayout>
@@ -153,43 +212,21 @@ export default function ProductDetailPage() {
     );
   }
 
+  // Thông tin giá và tồn kho
   const price = Number(product.price ?? 0);
+
+  const salePriceValue = Number(
+    product.salePrice ?? product.sale_price ?? 0
+  );
+
   const salePrice =
-    product.salePrice != null &&
-    product.salePrice !== "" &&
-    Number(product.salePrice) > 0 &&
-    Number(product.salePrice) < price
-      ? Number(product.salePrice)
+    salePriceValue > 0 && salePriceValue < price
+      ? salePriceValue
       : null;
 
   const currentPrice = salePrice ?? price;
-  const addCurrentProductToCart = (buyNow = false) => {
-    if (!isLoggedIn()) {
-      navigate("/login", {
-        state: {
-          from: location.pathname,
-          message: "Vui lòng đăng nhập hoặc đăng ký để mua hàng.",
-          pendingCartAction: { quantity, buyNow },
-        },
-      });
-      return false;
-    }
 
-    try {
-      addToCart({
-        id: product.id,
-        name: product.name,
-        image: product.image,
-        price: currentPrice,
-        stock,
-      }, quantity);
-      setCartMessage("Đã thêm sản phẩm vào giỏ hàng.");
-      return true;
-    } catch (cartError) {
-      setCartMessage(cartError.message);
-      return false;
-    }
-  };
+  const stock = Number(product.quantity ?? 0);
 
   const categoryName =
     typeof product.category === "object" &&
@@ -201,8 +238,7 @@ export default function ProductDetailPage() {
     ? resolveProductImage(product.image, product.id)
     : null;
 
-  const stock = Number(product.quantity ?? 0);
-
+  // Chọn số lượng sản phẩm
   const handleQuantityChange = (value) => {
     const nextQuantity = Number(value);
 
@@ -215,22 +251,59 @@ export default function ProductDetailPage() {
     }
   };
 
-  const cartProduct = {
-    id: product.id,
-    name: product.name,
-    price: currentPrice,
-    image: product.image,
-    stock,
-    unit: product.unit,
+  // Thêm sản phẩm vào giỏ hàng
+  const addCurrentProductToCart = (buyNow = false) => {
+    // Kiểm tra đăng nhập
+    if (!isLoggedIn()) {
+      navigate("/login", {
+        state: {
+          from: location.pathname,
+          message:
+            "Vui lòng đăng nhập hoặc đăng ký để mua hàng.",
+          pendingCartAction: {
+            quantity,
+            buyNow,
+          },
+        },
+      });
+
+      return false;
+    }
+
+    try {
+      addToCart(
+        {
+          id: product.id,
+          name: product.name,
+          image: product.image,
+          price: currentPrice,
+          stock,
+          unit: product.unit,
+        },
+        quantity
+      );
+
+      setCartMessage(
+        "Đã thêm sản phẩm vào giỏ hàng."
+      );
+
+      return true;
+    } catch (cartError) {
+      setCartMessage(cartError.message);
+      return false;
+    }
   };
 
+  // Thêm vào giỏ
   const handleAddToCart = () => {
-    addToCart(cartProduct, quantity);
+    addCurrentProductToCart();
   };
 
+  // Mua ngay
   const handleBuyNow = () => {
-    addToCart(cartProduct, quantity);
-    navigate("/cart");
+    if (addCurrentProductToCart(true)) {
+      navigate("/cart");
+    }
   };
 
   return (
@@ -244,7 +317,10 @@ export default function ProductDetailPage() {
 
           <span className="mx-2">/</span>
 
-          <Link to="/products" className="hover:text-amber-800">
+          <Link
+            to="/products"
+            className="hover:text-amber-800"
+          >
             Sản phẩm
           </Link>
 
@@ -259,7 +335,8 @@ export default function ProductDetailPage() {
       <section className="bg-white py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid grid-cols-1 items-start gap-10 md:grid-cols-2 lg:gap-16">
-            {/* Hình ảnh từ backend */}
+
+            {/* Hình ảnh sản phẩm */}
             <div className="relative flex min-h-80 items-center justify-center rounded-2xl border border-stone-200 bg-[#f8f6f2] p-8 sm:p-12">
               {product.tag && (
                 <span className="absolute left-4 top-4 rounded bg-amber-800 px-3 py-1 text-xs text-white">
@@ -279,7 +356,7 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Thông tin sản phẩm từ backend */}
+            {/* Thông tin sản phẩm */}
             <div>
               {categoryName && (
                 <p className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-800">
@@ -291,6 +368,7 @@ export default function ProductDetailPage() {
                 {product.name}
               </h1>
 
+              {/* Giá sản phẩm */}
               <div className="mb-6 flex flex-wrap items-baseline gap-3">
                 <span className="text-3xl font-bold text-amber-800">
                   {formatCurrency(currentPrice)}
@@ -303,13 +381,14 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
+              {/* Tóm tắt */}
               {product.summary && (
                 <p className="mb-6 border-b border-stone-200 pb-6 text-sm leading-relaxed text-stone-600">
                   {product.summary}
                 </p>
               )}
 
-              {/* Thông tin tồn kho từ backend */}
+              {/* Thông tin tồn kho */}
               <div className="mb-6 space-y-3 border-b border-stone-200 pb-6 text-sm">
                 {product.quantity != null && (
                   <div className="flex gap-3">
@@ -325,7 +404,9 @@ export default function ProductDetailPage() {
                       }
                     >
                       {stock}
-                      {product.unit ? ` ${product.unit}` : ""}
+                      {product.unit
+                        ? ` ${product.unit}`
+                        : ""}
                     </span>
                   </div>
                 )}
@@ -335,6 +416,7 @@ export default function ProductDetailPage() {
                     <span className="w-32 shrink-0 font-semibold text-stone-800">
                       Đơn vị:
                     </span>
+
                     <span>{product.unit}</span>
                   </div>
                 )}
@@ -343,6 +425,7 @@ export default function ProductDetailPage() {
                   <span className="w-32 shrink-0 font-semibold text-stone-800">
                     Mã sản phẩm:
                   </span>
+
                   <span>{product.id}</span>
                 </div>
               </div>
@@ -380,60 +463,47 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
+              {/* Hết hàng */}
+              {stock <= 0 && (
+                <p className="mb-6 font-medium text-red-600">
+                  Sản phẩm hiện đã hết hàng.
+                </p>
+              )}
+
+              {/* Nút mua hàng */}
               {stock > 0 && (
                 <div className="mb-6 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={addCurrentProductToCart}
+                    onClick={handleAddToCart}
                     className="rounded-lg border border-amber-800 px-5 py-3 text-sm font-bold text-amber-900 transition hover:bg-amber-50"
                   >
                     Thêm vào giỏ
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => {
-                      if (addCurrentProductToCart(true)) navigate("/cart");
-                    }}
+                    onClick={handleBuyNow}
                     className="rounded-lg bg-amber-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-amber-900"
                   >
                     Mua ngay
                   </button>
                 </div>
               )}
+
+              {/* Thông báo giỏ hàng */}
               {cartMessage && (
-                <p className="mb-5 text-sm font-medium text-amber-900" role="status">
+                <p
+                  className="mb-5 text-sm font-medium text-amber-900"
+                  role="status"
+                >
                   {cartMessage}
                 </p>
-              )}
-
-              {stock <= 0 && product.quantity != null && (
-                <p className="mb-6 font-medium text-red-600">
-                  Sản phẩm hiện đã hết hàng.
-                </p>
-              )}
-
-              {stock > 0 && (
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    className="rounded-lg border border-amber-800 px-6 py-3 font-semibold text-amber-800 transition hover:bg-amber-50"
-                  >
-                    Thêm vào giỏ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleBuyNow}
-                    className="rounded-lg bg-amber-800 px-6 py-3 font-semibold text-white transition hover:bg-amber-700"
-                  >
-                    Mua ngay
-                  </button>
-                </div>
               )}
             </div>
           </div>
 
-          {/* Mô tả chi tiết từ backend */}
+          {/* Mô tả chi tiết */}
           {product.detail && (
             <div className="mt-12 border-t border-stone-200 pt-8">
               <h2 className="mb-5 text-xl font-bold text-stone-800">
@@ -446,7 +516,7 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          {/* Sản phẩm liên quan từ backend */}
+          {/* Sản phẩm liên quan */}
           {related.length > 0 && (
             <div className="mt-16 border-t border-stone-200 pt-10">
               <h2 className="mb-8 text-center text-2xl font-bold text-stone-800">
