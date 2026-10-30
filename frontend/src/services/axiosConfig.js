@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getUsableToken } from "../utils/token";
 
 /**
  * Axios instance – proxy /api → http://localhost:8081/api (qua vite.config.js)
@@ -11,7 +12,7 @@ const api = axios.create({
 
 // Interceptor: gắn Bearer token vào mọi request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token")?.trim();
+  const token = getUsableToken();
   if (token) {
     const authorization = token.startsWith("Bearer ")
       ? token
