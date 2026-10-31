@@ -10,11 +10,20 @@ import {
 } from "lucide-react";
 
 import SearchModal from "./SearchModal";
-import { isLoggedIn, logout } from "../services/authApi";
+import {
+  getCurrentUserRole,
+  isLoggedIn,
+  logout,
+} from "../services/authApi";
 import {
   CART_UPDATED_EVENT,
   getCartItemCount,
 } from "../services/cartApi";
+import { getMyContactReplies } from "../services/contactApi";
+import {
+  CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+  getUnreadContactCount,
+} from "../services/contactNotifications";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -22,6 +31,7 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [authenticated, setAuthenticated] = useState(isLoggedIn);
+  const [unreadContactCount, setUnreadContactCount] = useState(0);
 
   // Đồng bộ số lượng sản phẩm trong giỏ hàng
   useEffect(() => {
@@ -44,6 +54,49 @@ export default function Navbar() {
       window.removeEventListener("auth-changed", updateCartCount);
       window.removeEventListener("auth-changed", updateAuthentication);
       window.removeEventListener("storage", updateCartCount);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const refreshInboxNotifications = async () => {
+      if (!isLoggedIn() || getCurrentUserRole() === "ADMIN") {
+        setUnreadContactCount(0);
+        return;
+      }
+
+      try {
+        const response = await getMyContactReplies();
+        if (active) {
+          setUnreadContactCount(
+            getUnreadContactCount(response.data?.data || [], "USER"),
+          );
+        }
+      } catch (error) {
+        if (error.response?.status !== 401 && error.response?.status !== 403) {
+          console.error("Không thể kiểm tra tin nhắn liên hệ mới:", error);
+        }
+      }
+    };
+
+    refreshInboxNotifications();
+    const intervalId = window.setInterval(refreshInboxNotifications, 30000);
+    window.addEventListener("auth-changed", refreshInboxNotifications);
+    window.addEventListener(
+      CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+      refreshInboxNotifications,
+    );
+    window.addEventListener("focus", refreshInboxNotifications);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("auth-changed", refreshInboxNotifications);
+      window.removeEventListener(
+        CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+        refreshInboxNotifications,
+      );
+      window.removeEventListener("focus", refreshInboxNotifications);
     };
   }, []);
 
@@ -114,11 +167,16 @@ export default function Navbar() {
             <Link
               to="/inbox"
               onClick={() => setIsUserMenuOpen(false)}
-              className="rounded-full bg-amber-50 p-2.5 text-amber-900 transition hover:bg-amber-100 sm:p-3"
+              className="relative rounded-full bg-amber-50 p-2.5 text-amber-900 transition hover:bg-amber-100 sm:p-3"
               aria-label="Hộp thư phản hồi"
-              title="Hộp thư phản hồi từ Admin"
+              title={unreadContactCount ? `${unreadContactCount} tin nhắn mới từ cửa hàng` : "Hộp thư phản hồi từ cửa hàng"}
             >
               <Mail className="h-4 w-4" />
+              {unreadContactCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {unreadContactCount > 9 ? "9+" : unreadContactCount}
+                </span>
+              )}
             </Link>
 
             {/* Giỏ hàng */}
@@ -169,7 +227,12 @@ export default function Navbar() {
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
                       >
                         <Mail className="h-4 w-4 text-amber-800" />
-                        Phản hồi liên hệ
+                        <span className="flex-1">Phản hồi liên hệ</span>
+                        {unreadContactCount > 0 && (
+                          <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                            {unreadContactCount > 9 ? "9+" : unreadContactCount}
+                          </span>
+                        )}
                       </Link>
                       <button
                         type="button"

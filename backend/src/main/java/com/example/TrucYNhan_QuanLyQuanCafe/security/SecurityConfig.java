@@ -81,16 +81,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/uploads/image").authenticated()
                 // Gửi liên hệ không cần auth
-                .requestMatchers(HttpMethod.POST, "/api/contacts", "/api/contacts/**").permitAll()
-                // Các endpoint thùng rác cần xác thực, kể cả khi chạy sau proxy
+                .requestMatchers(HttpMethod.POST, "/api/contacts/*/messages").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
+                // Hộp thư dành cho tài khoản đăng nhập; danh sách/quản lý liên hệ chỉ dành cho ADMIN
                 .requestMatchers(HttpMethod.GET, "/api/contacts/inbox").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/contacts/trash").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/contacts/*/restore").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/contacts/*/force-delete").authenticated()
-                // Xem và quản lý liên hệ yêu cầu đăng nhập
-                .requestMatchers(HttpMethod.GET, "/api/contacts", "/api/contacts/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/contacts/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/contacts/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/contacts", "/api/contacts/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/contacts/*/reply").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/contacts/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/contacts/**").hasRole("ADMIN")
                 // Logout endpoint
                 .requestMatchers(HttpMethod.POST, "/api/users/logout", "/api/auth/logout").permitAll()
                 // Chỉ ADMIN mới có quyền tạo danh mục 

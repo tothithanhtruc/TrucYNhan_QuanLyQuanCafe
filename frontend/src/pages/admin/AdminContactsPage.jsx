@@ -14,13 +14,18 @@ import {
 import { Link } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import {
+  CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+  isContactUnread,
+  markContactMessagesSeen,
+} from "../../services/contactNotifications";
+import {
   deleteContact,
   forceDeleteContact,
   getContactById,
   getContacts,
   getTrashContacts,
-  replyToContact,
   restoreContact,
+  sendContactMessage,
 } from "../../services/contactApi";
 import Pagination from "../../components/Pagination";
 
@@ -33,7 +38,6 @@ export default function AdminContactsPage() {
   const pageSize = 5;
   const [selectedContact, setSelectedContact] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [replyOpen, setReplyOpen] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
   const [replySaving, setReplySaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -41,14 +45,38 @@ export default function AdminContactsPage() {
   const [deleting, setDeleting] = useState(false);
   const [notification, setNotification] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [, setUnreadVersion] = useState(0);
 
   useEffect(() => {
-    fetchContacts();
-  }, []);
+    fetchContacts(viewingTrash);
+    if (viewingTrash) return undefined;
+
+    const refreshContacts = () => fetchContacts(false, true);
+    const intervalId = window.setInterval(refreshContacts, 30000);
+    window.addEventListener("focus", refreshContacts);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshContacts);
+    };
+  }, [viewingTrash]);
 
   useEffect(() => {
     setPage(1);
   }, [searchTerm, viewingTrash]);
+
+  useEffect(() => {
+    const updateUnreadState = () => setUnreadVersion((version) => version + 1);
+    window.addEventListener(
+      CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+      updateUnreadState,
+    );
+    return () =>
+      window.removeEventListener(
+        CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+        updateUnreadState,
+      );
+  }, []);
 
   const showToast = (message, type = "success") => {
     setNotification({ message, type });
@@ -87,18 +115,23 @@ export default function AdminContactsPage() {
     };
   };
 
-  const fetchContacts = async (showTrash = viewingTrash) => {
-    setLoading(true);
+  const fetchContacts = async (showTrash = viewingTrash, silent = false) => {
+    if (!silent) setLoading(true);
     setLoadError(null);
     try {
       const response = showTrash ? await getTrashContacts() : await getContacts();
       const data = response.data?.data || response.data || [];
       setContacts(data);
+      setSelectedContact((currentContact) =>
+        currentContact
+          ? data.find((contact) => contact.id === currentContact.id) || currentContact
+          : currentContact,
+      );
     } catch (error) {
       console.error("Lỗi khi tải danh sách liên hệ:", error);
       setLoadError(getRequestError(error));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -106,19 +139,17 @@ export default function AdminContactsPage() {
     setViewingTrash(showTrash);
     setSearchTerm("");
     setSelectedContact(null);
-    fetchContacts(showTrash);
   };
 
-  const handleViewDetails = async (id, openReply = false) => {
+  const handleViewDetails = async (id) => {
     setSelectedContact(null);
-    setReplyOpen(openReply);
     setReplyMessage("");
     setDetailLoading(true);
     try {
       const response = await getContactById(id);
       const contact = response.data?.data || response.data;
       setSelectedContact(contact);
-      setReplyMessage(contact.adminReply || "");
+      markContactMessagesSeen([contact], "ADMIN", contact.id);
     } catch (error) {
       console.error("Lỗi khi tải chi tiết liên hệ:", error);
       showToast(getRequestError(error).message, "error");
@@ -132,20 +163,20 @@ export default function AdminContactsPage() {
 
     setReplySaving(true);
     try {
-      const response = await replyToContact(
+      const response = await sendContactMessage(
         selectedContact.id,
         replyMessage.trim(),
       );
       const updatedContact = response.data?.data || response.data;
       setSelectedContact(updatedContact);
-      setReplyMessage(updatedContact.adminReply || replyMessage.trim());
-      setReplyOpen(false);
+      setReplyMessage("");
       setContacts((currentContacts) =>
         currentContacts.map((contact) =>
           contact.id === updatedContact.id ? updatedContact : contact,
         ),
       );
-      showToast("Đã lưu phản hồi trên hệ thống");
+      showToast("Đã gửi tin nhắn cho khách hàng");
+      markContactMessagesSeen([updatedContact], "ADMIN", updatedContact.id);
     } catch (error) {
       console.error("Lỗi khi lưu phản hồi liên hệ:", error);
       showToast(getRequestError(error).message, "error");
@@ -322,7 +353,14 @@ export default function AdminContactsPage() {
                   </tr>
                 ) : (
                   paginatedContacts.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-stone-50/80 transition">
+                    <tr
+                      key={contact.id}
+                      className={`transition ${
+                        !viewingTrash && isContactUnread(contact, "ADMIN")
+                          ? "bg-amber-50/70 hover:bg-amber-50"
+                          : "hover:bg-stone-50/80"
+                      }`}
+                    >
                       <td className="py-3 px-4">
                         <div className="font-bold text-stone-900">{contact.name}</div>
                         <div className="text-xs text-stone-500">
@@ -339,9 +377,17 @@ export default function AdminContactsPage() {
                       </td>
                       <td className="py-3 px-4 text-stone-700">
                         {contact.subject || "Không có tiêu đề"}
+                        {!viewingTrash && isContactUnread(contact, "ADMIN") && (
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+                            Khách nhắn mới
+                          </span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-stone-600 max-w-sm truncate">
-                        {contact.message || "-"}
+                        {contact.messages?.length
+                          ? contact.messages[contact.messages.length - 1].message
+                          : contact.message || "-"}
                       </td>
                       <td className="py-3 px-4 text-xs text-stone-500 whitespace-nowrap">
                         {formatDate(contact.createdAt)}
@@ -359,7 +405,7 @@ export default function AdminContactsPage() {
                           {!viewingTrash && (
                             <button
                               type="button"
-                              onClick={() => handleViewDetails(contact.id, true)}
+                              onClick={() => handleViewDetails(contact.id)}
                               title="Phản hồi khách hàng trên website"
                               className="p-1.5 text-stone-500 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition"
                             >
@@ -434,7 +480,7 @@ export default function AdminContactsPage() {
 
       {(detailLoading || selectedContact) && (
         <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-stone-200">
+          <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-stone-200">
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
               <h2 className="text-lg font-bold text-stone-900">Chi Tiết Liên Hệ</h2>
               <button
@@ -491,85 +537,86 @@ export default function AdminContactsPage() {
                     {selectedContact.subject || "Không có tiêu đề"}
                   </div>
                 </div>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                    Nội dung
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-stone-700">
-                    {selectedContact.message || "Không có nội dung"}
-                  </p>
-                </div>
-                <div className="text-xs text-stone-500">
-                  Ngày gửi: {formatDate(selectedContact.createdAt)}
-                </div>
-                {!viewingTrash && (
-                  <div className="border-t border-stone-100 pt-4">
-                    {!replyOpen ? (
-                      <div className="space-y-3">
-                        {selectedContact.adminReply && (
-                          <div>
-                            <div className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                              Phản hồi của cửa hàng
-                            </div>
-                            <p className="mt-1 whitespace-pre-wrap break-words rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-stone-700">
-                              {selectedContact.adminReply}
-                            </p>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setReplyOpen(true)}
-                          className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-700"
-                        >
-                          <Send className="w-4 h-4" />
-                          {selectedContact.adminReply
-                            ? "Chỉnh sửa phản hồi"
-                            : "Phản hồi khách hàng"}
-                        </button>
+                {viewingTrash ? (
+                  <>
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                        Nội dung
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <label
-                          htmlFor="contact-reply"
-                          className="block text-xs font-bold uppercase tracking-wider text-stone-600"
-                        >
-                          Nội dung phản hồi
-                        </label>
-                        <textarea
-                          id="contact-reply"
-                          rows={5}
-                          value={replyMessage}
-                          onChange={(event) => setReplyMessage(event.target.value)}
-                          placeholder="Nhập nội dung phản hồi cho khách hàng..."
-                          className="w-full resize-y rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-800 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-                        />
-                        <p className="text-xs text-stone-500">
-                          Phản hồi sẽ được lưu trong hệ thống và hiển thị tại đây.
-                        </p>
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReplyMessage(selectedContact.adminReply || "");
-                              setReplyOpen(false);
-                            }}
-                            disabled={replySaving}
-                            className="rounded-xl border border-stone-200 px-4 py-2.5 text-xs font-bold text-stone-600 hover:bg-stone-50"
-                          >
-                            Hủy
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSaveReply}
-                            disabled={!replyMessage.trim() || replySaving}
-                            className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Send className="w-4 h-4" />
-                            {replySaving ? "Đang lưu..." : "Lưu phản hồi"}
-                          </button>
+                      <p className="mt-1 whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-3 text-stone-700">
+                        {selectedContact.message || "Không có nội dung"}
+                      </p>
+                    </div>
+                    <div className="text-xs text-stone-500">
+                      Ngày gửi: {formatDate(selectedContact.createdAt)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4 border-t border-stone-100 pt-4">
+                    <div className="text-xs font-bold uppercase tracking-wider text-stone-500">
+                      Cuộc trò chuyện
+                    </div>
+                    <div className="max-h-72 space-y-3 overflow-y-auto rounded-xl bg-stone-50 p-3">
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white p-3 shadow-sm">
+                          <p className="mb-1 text-xs font-semibold text-stone-500">
+                            Khách hàng · {formatDate(selectedContact.createdAt)}
+                          </p>
+                          <p className="whitespace-pre-wrap break-words text-sm text-stone-700">
+                            {selectedContact.message || "Không có nội dung"}
+                          </p>
                         </div>
                       </div>
-                    )}
+                      {(selectedContact.messages || []).map((message) => {
+                        const isAdmin = message.senderRole === "ADMIN";
+                        return (
+                          <div
+                            key={message.id ?? `${message.senderRole}-${message.createdAt}`}
+                            className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-2xl p-3 ${
+                                isAdmin
+                                  ? "rounded-tr-sm bg-amber-100"
+                                  : "rounded-tl-sm bg-white shadow-sm"
+                              }`}
+                            >
+                              <p className={`mb-1 text-xs font-semibold ${isAdmin ? "text-amber-900" : "text-stone-500"}`}>
+                                {isAdmin ? "Cửa hàng" : selectedContact.name} · {formatDate(message.createdAt)}
+                              </p>
+                              <p className="whitespace-pre-wrap break-words text-sm text-stone-800">
+                                {message.message}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <label
+                      htmlFor="contact-reply"
+                      className="block text-xs font-bold uppercase tracking-wider text-stone-600"
+                    >
+                      Tin nhắn cho khách hàng
+                    </label>
+                    <textarea
+                      id="contact-reply"
+                      rows={3}
+                      value={replyMessage}
+                      onChange={(event) => setReplyMessage(event.target.value)}
+                      placeholder="Nhập tin nhắn..."
+                      className="w-full resize-y rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-800 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleSaveReply}
+                        disabled={!replyMessage.trim() || replySaving}
+                        className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Send className="w-4 h-4" />
+                        {replySaving ? "Đang gửi..." : "Gửi tin nhắn"}
+                      </button>
+                    </div>
                   </div>
                 )}
                 <div className="flex flex-wrap justify-end gap-2 pt-2">

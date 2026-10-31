@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -18,11 +18,53 @@ import {
   Newspaper,
 } from "lucide-react";
 import { logout } from "../services/authApi";
+import { getContacts } from "../services/contactApi";
+import {
+  CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+  getUnreadContactCount,
+} from "../services/contactNotifications";
 
 export default function AdminLayout({ children, title = "Quản Trị Hệ Thống" }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadContactCount, setUnreadContactCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    let active = true;
+    const refreshContactNotifications = async () => {
+      try {
+        const response = await getContacts();
+        if (active) {
+          setUnreadContactCount(
+            getUnreadContactCount(response.data?.data || [], "ADMIN"),
+          );
+        }
+      } catch (error) {
+        if (error.response?.status !== 401 && error.response?.status !== 403) {
+          console.error("Không thể kiểm tra tin nhắn khách hàng mới:", error);
+        }
+      }
+    };
+
+    refreshContactNotifications();
+    const intervalId = window.setInterval(refreshContactNotifications, 30000);
+    window.addEventListener(
+      CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+      refreshContactNotifications,
+    );
+    window.addEventListener("focus", refreshContactNotifications);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener(
+        CONTACT_NOTIFICATIONS_UPDATED_EVENT,
+        refreshContactNotifications,
+      );
+      window.removeEventListener("focus", refreshContactNotifications);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -135,7 +177,12 @@ export default function AdminLayout({ children, title = "Quản Trị Hệ Thố
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-stone-400"}`} />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.to === "/admin/contacts" && unreadContactCount > 0 && (
+                  <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                    {unreadContactCount > 9 ? "9+" : unreadContactCount}
+                  </span>
+                )}
               </NavLink>
             );
           })}

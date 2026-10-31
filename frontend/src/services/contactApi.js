@@ -33,6 +33,12 @@ export const replyToContact = (id, reply) =>
   api.put(`/contacts/${id}/reply`, { reply });
 
 /**
+ * Lưu một tin nhắn trong cuộc trò chuyện của liên hệ
+ */
+export const sendContactMessage = (id, reply) =>
+  api.post(`/contacts/${id}/messages`, { reply });
+
+/**
  * Chuyển liên hệ vào thùng rác → DELETE /api/contacts/{id}
  */
 export const deleteContact = (id) => api.delete(`/contacts/${id}`);

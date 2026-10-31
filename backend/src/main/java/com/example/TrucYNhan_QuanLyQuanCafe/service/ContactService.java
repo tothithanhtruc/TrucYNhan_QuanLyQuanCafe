@@ -22,6 +22,8 @@ public interface ContactService {
 
     ContactResponse reply(Long id, ContactReplyRequest request);
 
+    ContactResponse sendMessage(Long id, ContactReplyRequest request, String username, boolean admin);
+
     void delete(Long id);
 
     void restore(Long id);
