@@ -24,7 +24,7 @@ export default function LoginPage() {
     try {
       await login(username.trim(), password);
       const role = getCurrentUserRole();
-      const defaultDestination = role === "ADMIN" ? "/admin" : "/shop";
+      const defaultDestination = role === "ADMIN" ? "/admin" : "/";
       navigate(location.state?.from || defaultDestination, {
         replace: true,
         state: location.state?.pendingCartAction
