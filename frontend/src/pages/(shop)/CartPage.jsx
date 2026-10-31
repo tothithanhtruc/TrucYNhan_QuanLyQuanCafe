@@ -166,11 +166,13 @@ export default function CartPage() {
                   />
 
                   {/* Hình ảnh */}
-                  <img
-                    src={resolveProductImage(item.image, item.id)}
-                    alt={item.name}
-                    className="h-20 w-20 rounded-lg bg-stone-50 object-contain p-2"
-                  />
+                  {resolveProductImage(item.image, item.id) && (
+                    <img
+                      src={resolveProductImage(item.image, item.id)}
+                      alt={item.name}
+                      className="h-20 w-20 rounded-lg bg-stone-50 object-contain p-2"
+                    />
+                  )}
 
                   {/* Thông tin sản phẩm */}
                   <div className="min-w-36 flex-1">

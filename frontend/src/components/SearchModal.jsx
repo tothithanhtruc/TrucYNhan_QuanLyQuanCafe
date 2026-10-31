@@ -137,7 +137,9 @@ export default function SearchModal({ isOpen, onClose }) {
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#faf8f5] transition-colors cursor-pointer group border border-transparent hover:border-stone-200"
                     >
                       <div className="w-14 h-14 bg-[#f8f6f2] rounded-lg p-1.5 flex-shrink-0 flex items-center justify-center">
-                        <img src={img} alt={item.name} className="w-full h-full object-contain" />
+                        {img && (
+                          <img src={img} alt={item.name} className="w-full h-full object-contain" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-[10px] text-stone-400 uppercase tracking-widest block truncate">

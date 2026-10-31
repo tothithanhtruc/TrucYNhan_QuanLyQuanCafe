@@ -45,12 +45,11 @@ export default function ProductCard({ product }) {
       to={`/products/${id}`}
       className="bg-white rounded-lg overflow-hidden border border-stone-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col"
     >
-      {/* Image container */}
-      <div className="relative bg-[#f8f6f2] h-60 flex items-center justify-center overflow-hidden p-6">
+       <div className="relative bg-[#f8f6f2] h-60 overflow-hidden">
         <img
           src={imageUrl}
           alt={name}
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
             e.currentTarget.src = resolveProductImage(null, id);
           }}
@@ -61,6 +60,7 @@ export default function ProductCard({ product }) {
           </span>
         )}
       </div>
+
 
       {/* Body container */}
       <div className="p-4 text-center flex-1 flex flex-col justify-between">

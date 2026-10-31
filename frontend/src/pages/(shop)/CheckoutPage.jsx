@@ -377,11 +377,13 @@ export default function CheckoutPage() {
                     key={item.id}
                     className="flex items-center gap-3 rounded-lg bg-stone-50 p-3"
                   >
-                    <img
-                      src={resolveProductImage(item.image, item.id)}
-                      alt={item.name}
-                      className="h-14 w-14 rounded-lg bg-white object-contain p-1"
-                    />
+                    {resolveProductImage(item.image, item.id) && (
+                      <img
+                        src={resolveProductImage(item.image, item.id)}
+                        alt={item.name}
+                        className="h-14 w-14 rounded-lg bg-white object-contain p-1"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-stone-900">
                         {item.name}
