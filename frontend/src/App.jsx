@@ -14,6 +14,8 @@ import ContactInboxPage from "./pages/(shop)/ContactInboxPage";
 import CartPage from "./pages/(shop)/CartPage";
 import CheckoutPage from "./pages/(shop)/CheckoutPage";
 import ProfilePage from "./pages/(shop)/ProfilePage";
+import VNPayReturnPage from "./pages/(shop)/VNPayReturnPage";
+import VNPayGatewayPage from "./pages/(shop)/VNPayGatewayPage";
 
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -47,6 +49,9 @@ export default function App() {
           path="/checkout"
           element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>}
         />
+        <Route path="/payment/vnpay-return" element={<VNPayReturnPage />}
+        />
+        <Route path="/payment/vnpay-gateway" element={<VNPayGatewayPage />} />
         <Route
           path="/profile"
           element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
@@ -113,3 +118,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

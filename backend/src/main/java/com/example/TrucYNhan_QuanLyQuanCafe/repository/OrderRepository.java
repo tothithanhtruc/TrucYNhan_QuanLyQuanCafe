@@ -12,4 +12,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByDeletedAtIsNotNull();
     List<Order> findByStatusIgnoreCaseAndDeletedAtIsNull(String status);
     List<Order> findByUserIdAndDeletedAtIsNull(Long userId);
+    java.util.Optional<Order> findByOrderCode(String orderCode);
 }
