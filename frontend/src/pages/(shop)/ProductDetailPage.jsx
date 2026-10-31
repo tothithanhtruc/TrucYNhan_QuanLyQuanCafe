@@ -337,7 +337,7 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 items-start gap-10 md:grid-cols-2 lg:gap-16">
 
             {/* Hình ảnh sản phẩm */}
-            <div className="relative flex min-h-80 items-center justify-center rounded-2xl border border-stone-200 bg-[#f8f6f2] p-8 sm:p-12">
+            <div className="relative h-[360px] overflow-hidden rounded-2xl border border-stone-200 bg-[#f8f6f2] sm:h-[420px]">
               {product.tag && (
                 <span className="absolute left-4 top-4 rounded bg-amber-800 px-3 py-1 text-xs text-white">
                   {product.tag}
@@ -348,7 +348,7 @@ export default function ProductDetailPage() {
                 <img
                   src={imageUrl}
                   alt={product.name}
-                  className="max-h-[420px] max-w-full object-contain"
+                  className="h-full w-full object-cover"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}

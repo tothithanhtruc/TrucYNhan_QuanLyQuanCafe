@@ -387,9 +387,7 @@ export default function AdminProductsPage() {
                                 alt={p.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src =
-                                    "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300&auto=format&fit=crop&q=80";
+                                  e.currentTarget.hidden = true;
                                 }}
                               />
                             </div>
