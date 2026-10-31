@@ -7,10 +7,9 @@ import { getCategories } from "../../services/categoryApi";
 import { resolveCategoryImage, formatCurrency } from "../../utils/format";
 import Pagination from "../../components/Pagination";
 const SORT_OPTIONS = [
-  { value: "default", label: "Alphabetically, A-Z" },
-  { value: "name-desc", label: "Alphabetically, Z-A" },
-  { value: "price-asc", label: "Price, low to high" },
-  { value: "price-desc", label: "Price, high to low" },
+ ,
+  { value: "price-asc", label: "Giá từ thấp đến cao" },
+  { value: "price-desc", label: "Giá từ cao tới thấp" },
 ];
 
 function mapProduct(p) {
@@ -154,7 +153,7 @@ export default function ShopProductsPage() {
         </div>
       </div>
 
-      {/* ═══════════ CIRCLE CATEGORIES (theo hình 1) ═══════════ */}
+      {/* ═══════════ CIRCLE CATEGORIES ═══════════ */}
       <section className="bg-white border-b border-stone-200 py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-8 sm:gap-12 justify-center flex-wrap items-center">
@@ -373,29 +372,6 @@ export default function ShopProductsPage() {
 
                 {/* View switcher & sort */}
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`p-2 rounded border text-sm transition-colors ${viewMode === "grid"
-                        ? "border-stone-800 text-stone-800 bg-stone-100"
-                        : "border-stone-300 text-stone-400 hover:text-stone-700"
-                        }`}
-                      title="Grid view"
-                    >
-                      ▦
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`p-2 rounded border text-sm transition-colors ${viewMode === "list"
-                        ? "border-stone-800 text-stone-800 bg-stone-100"
-                        : "border-stone-300 text-stone-400 hover:text-stone-700"
-                        }`}
-                      title="List view"
-                    >
-                      ≡
-                    </button>
-                  </div>
-
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-stone-400 hidden sm:inline">Sort:</span>
                     <select
