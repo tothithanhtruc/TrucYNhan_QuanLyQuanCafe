@@ -313,7 +313,7 @@ export default function ShopProductsPage() {
                         />
                         <span className="truncate max-w-[150px]">{c.name}</span>
                       </span>
-                      <span className="text-stone-400 text-xs">({c.count})</span>
+                      
                     </label>
                   ))}
                 </div>
@@ -331,7 +331,7 @@ export default function ShopProductsPage() {
                         <input type="checkbox" className="rounded border-stone-300 text-amber-800" />
                         {w}
                       </span>
-                      <span className="text-stone-400 text-xs">({(idx + 1) * 3})</span>
+                      
                     </label>
                   ))}
                 </div>
