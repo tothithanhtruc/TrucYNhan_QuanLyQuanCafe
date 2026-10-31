@@ -9,6 +9,8 @@ public record OrderResponse(
         String orderCode,
         Long userId,
         String username,
+        String customerName,
+        String customerPhone,
         Long employeeId,
         String employeeName,
         Long tableId,

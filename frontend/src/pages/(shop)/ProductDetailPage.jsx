@@ -302,7 +302,7 @@ export default function ProductDetailPage() {
   // Mua ngay
   const handleBuyNow = () => {
     if (addCurrentProductToCart(true)) {
-      navigate("/cart");
+      navigate("/checkout");
     }
   };
 

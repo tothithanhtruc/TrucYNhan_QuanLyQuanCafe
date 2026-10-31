@@ -178,6 +178,8 @@ export default function CheckoutPage() {
 
       const response = await checkout({
         deliveryAddress: deliveryAddress.trim(),
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
         note:
           [
             `Tên: ${customerName.trim()}`,

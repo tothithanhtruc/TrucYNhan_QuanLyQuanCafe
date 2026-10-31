@@ -25,6 +25,21 @@ import Pagination from "../../components/Pagination";
 
 
 
+
+const getCustomerName = (order) => {
+  if (!order) return "Khách tại quầy";
+  if (order.customerName && order.customerName.trim()) {
+    return order.customerName.trim();
+  }
+  if (order.note) {
+    const match = order.note.match(/Tên:\s*([^|]+)/i);
+    if (match && match[1]?.trim()) {
+      return match[1].trim();
+    }
+  }
+  return order.username || "Khách tại quầy";
+};
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,6 +85,8 @@ export default function AdminOrdersPage() {
       const payload = {
         orderCode: order.orderCode,
         userId: order.userId,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
         employeeId: order.employeeId,
         tableId: order.tableId,
         orderType: order.orderType,
@@ -140,6 +157,7 @@ export default function AdminOrdersPage() {
   const filteredOrders = orders.filter((o) => {
     const matchSearch =
       (o.orderCode || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getCustomerName(o).toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.tableName || "").toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -276,7 +294,7 @@ const paginatedOrders = filteredOrders.slice(
                       </td>
                       <td className="py-3 px-4">
                         <div className="font-semibold text-stone-800">
-                          {o.username || "Khách tại quầy"}
+                          {getCustomerName(o)}
                         </div>
                         {o.tableName && (
                           <div className="text-xs text-amber-800 font-medium">
@@ -360,7 +378,7 @@ const paginatedOrders = filteredOrders.slice(
                   <div>
                     <span className="text-xs text-stone-500 block">Khách Hàng</span>
                     <span className="font-bold text-stone-800">
-                      {selectedOrder.username || "Khách tại quầy"}
+                      {getCustomerName(selectedOrder)}
                     </span>
                   </div>
                   <div>

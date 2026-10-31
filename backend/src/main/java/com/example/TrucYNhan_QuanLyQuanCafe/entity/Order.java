@@ -21,9 +21,15 @@ public class Order {
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
-   @ManyToOne(fetch = FetchType.LAZY)
-@JoinColumn(name = "table_id")
-private TableEntity table;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "table_id")
+    private TableEntity table;
+
+    @Column(name = "customer_name", length = 100)
+    private String customerName;
+
+    @Column(name = "customer_phone", length = 30)
+    private String customerPhone;
 
     @Column(name = "order_type", nullable = false, length = 30)
     private String orderType = "ONLINE";
@@ -59,10 +65,15 @@ private TableEntity table;
     public void setEmployee(Employee employee) { this.employee = employee; }
 
     public TableEntity getTable() {
-    return table;
-}
-
+        return table;
+    }
     public void setTable(TableEntity table) { this.table = table; }
+
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public String getCustomerPhone() { return customerPhone; }
+    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+
     public String getOrderType() { return orderType; }
     public void setOrderType(String orderType) { this.orderType = orderType; }
     public LocalDateTime getOrderDate() { return orderDate; }
