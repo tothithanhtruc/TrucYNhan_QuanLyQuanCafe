@@ -4,6 +4,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactRequest;
 import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactReplyRequest;
 import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Contact;
+import com.example.TrucYNhan_QuanLyQuanCafe.entity.ContactMessage;
 import com.example.TrucYNhan_QuanLyQuanCafe.exception.ResourceNotFoundException;
 import com.example.TrucYNhan_QuanLyQuanCafe.mapper.ContactMapper;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.ContactRepository;
@@ -108,11 +109,56 @@ public class ContactServiceImpl implements ContactService {
         if (contact.getDeletedAt() != null) {
             throw new ResourceNotFoundException("Không thể phản hồi liên hệ đang ở trong thùng rác: " + id);
         }
-        contact.setAdminReply(request.reply().trim());
+        String reply = request.reply().trim();
+        contact.setAdminReply(reply);
         if (contact.getUser() == null && contact.getEmail() != null && !contact.getEmail().isBlank()) {
             userRepository.findFirstByEmailIgnoreCase(contact.getEmail().trim()).ifPresent(contact::setUser);
         }
+        addMessage(contact, "ADMIN", reply);
         return contactMapper.toResponse(contactRepository.save(contact));
+    }
+
+    @Override
+    public ContactResponse sendMessage(Long id, ContactReplyRequest request, String username, boolean admin) {
+        Contact contact = contactRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy liên hệ với id: " + id));
+        if (contact.getDeletedAt() != null) {
+            throw new ResourceNotFoundException("Không thể nhắn tin trong liên hệ đang ở trong thùng rác: " + id);
+        }
+
+        String senderRole = admin ? "ADMIN" : "USER";
+        if (!admin) {
+            var user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản đang đăng nhập"));
+            boolean ownsContact = contact.getUser() != null
+                    && contact.getUser().getId().equals(user.getId());
+            boolean matchesEmail = contact.getEmail() != null
+                    && user.getEmail() != null
+                    && contact.getEmail().trim().equalsIgnoreCase(user.getEmail().trim());
+            if (!ownsContact && !matchesEmail) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn không có quyền nhắn tin trong liên hệ này");
+            }
+            if (contact.getUser() == null && matchesEmail) {
+                contact.setUser(user);
+            }
+        }
+
+        String message = request.reply().trim();
+        addMessage(contact, senderRole, message);
+        if (admin) {
+            contact.setAdminReply(message);
+        }
+        return contactMapper.toResponse(contactRepository.save(contact));
+    }
+
+    private void addMessage(Contact contact, String senderRole, String message) {
+        ContactMessage contactMessage = new ContactMessage();
+        contactMessage.setContact(contact);
+        contactMessage.setSenderRole(senderRole);
+        contactMessage.setMessage(message);
+        contactMessage.setCreatedAt(LocalDateTime.now());
+        contact.getMessages().add(contactMessage);
     }
 
     @Override

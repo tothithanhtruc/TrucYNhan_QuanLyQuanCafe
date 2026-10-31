@@ -6,6 +6,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.service.ContactService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -93,6 +94,22 @@ public class ContactController {
         ContactResponse updated = contactService.reply(id, request);
         return ResponseEntity.ok(Map.of(
                 "message", "Lưu phản hồi thành công",
+                "data", updated
+        ));
+    }
+
+    @PostMapping("/{id}/messages")
+    public ResponseEntity<Map<String, Object>> sendMessage(
+            @PathVariable Long id,
+            @Valid @RequestBody ContactReplyRequest request,
+            Authentication authentication) {
+        boolean admin = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch("ROLE_ADMIN"::equals);
+        ContactResponse updated = contactService.sendMessage(
+                id, request, authentication.getName(), admin);
+        return ResponseEntity.ok(Map.of(
+                "message", "Gửi tin nhắn thành công",
                 "data", updated
         ));
     }

@@ -1,26 +1,54 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Inbox, Mail, MessageSquare, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  Inbox,
+  Mail,
+  MessageSquare,
+  RefreshCw,
+  Send,
+} from "lucide-react";
 import PublicLayout from "../../layouts/PublicLayout";
-import { getMyContactReplies } from "../../services/contactApi";
+import {
+  getMyContactReplies,
+  sendContactMessage,
+} from "../../services/contactApi";
+import { markContactMessagesSeen } from "../../services/contactNotifications";
 
 export default function ContactInboxPage() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [messageDrafts, setMessageDrafts] = useState({});
+  const [sendingContactId, setSendingContactId] = useState(null);
 
   useEffect(() => {
     loadInbox();
+    const refreshInbox = () => {
+      if (document.visibilityState === "visible") loadInbox(true);
+    };
+    const intervalId = window.setInterval(refreshInbox, 30000);
+    window.addEventListener("focus", refreshInbox);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshInbox);
+    };
   }, []);
 
-  const loadInbox = async () => {
-    setLoading(true);
-    setError("");
+  const loadInbox = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const response = await getMyContactReplies();
-      setContacts(response.data?.data || []);
+      const inboxContacts = response.data?.data || [];
+      setContacts(inboxContacts);
+      markContactMessagesSeen(inboxContacts, "USER");
     } catch (requestError) {
       console.error("Lỗi khi tải hộp thư liên hệ:", requestError);
+      if (silent) return;
       if (requestError.response?.status === 401 || requestError.response?.status === 403) {
         setError("Vui lòng đăng nhập để xem phản hồi liên hệ.");
       } else if (!requestError.response) {
@@ -32,7 +60,7 @@ export default function ContactInboxPage() {
         );
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -40,6 +68,41 @@ export default function ContactInboxPage() {
     if (!value) return "";
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("vi-VN");
+  };
+
+  const handleSendMessage = async (contact) => {
+    const message = (messageDrafts[contact.id] || "").trim();
+    if (!message) return;
+
+    setSendingContactId(contact.id);
+    setError("");
+    try {
+      const response = await sendContactMessage(contact.id, message);
+      const updatedContact = response.data?.data || response.data;
+      setContacts((currentContacts) =>
+        currentContacts.map((item) =>
+          item.id === updatedContact.id ? updatedContact : item,
+        ),
+      );
+      setMessageDrafts((currentDrafts) => ({
+        ...currentDrafts,
+        [contact.id]: "",
+      }));
+    } catch (requestError) {
+      console.error("Lỗi khi gửi tin nhắn liên hệ:", requestError);
+      if (requestError.response?.status === 401 || requestError.response?.status === 403) {
+        setError("Vui lòng đăng nhập để trả lời tin nhắn.");
+      } else if (!requestError.response) {
+        setError("Không thể kết nối máy chủ. Vui lòng thử lại sau.");
+      } else {
+        setError(
+          requestError.response.data?.message ||
+            "Không thể gửi tin nhắn. Vui lòng thử lại.",
+        );
+      }
+    } finally {
+      setSendingContactId(null);
+    }
   };
 
   return (
@@ -129,29 +192,82 @@ export default function ContactInboxPage() {
                     </div>
                   </div>
                   <div className="grid gap-4 p-5 sm:p-6">
-                    <div>
+                    <div className="space-y-4">
                       <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-stone-500">
                         <MessageSquare className="h-4 w-4" />
-                        Nội dung bạn đã gửi
+                        Cuộc trò chuyện
                       </div>
-                      <p className="whitespace-pre-wrap break-words rounded-xl bg-stone-50 p-4 text-sm leading-relaxed text-stone-700">
-                        {contact.message}
-                      </p>
-                    </div>
-                    <div>
-                      <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-800">
-                        <Mail className="h-4 w-4" />
-                        Phản hồi từ cửa hàng
+                      <div className="flex justify-start">
+                        <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-stone-100 px-4 py-3">
+                          <p className="mb-1 text-xs font-semibold text-stone-500">
+                            Bạn · {formatDate(contact.createdAt)}
+                          </p>
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-stone-700">
+                            {contact.message}
+                          </p>
+                        </div>
                       </div>
-                      <p className="whitespace-pre-wrap break-words rounded-xl border border-amber-100 bg-amber-50/70 p-4 text-sm leading-relaxed text-stone-800">
-                        {contact.adminReply ? (
-                        contact.adminReply
-                      ) : (
-                        <span className="italic text-stone-500">
-                          Cửa hàng đã tiếp nhận câu hỏi của bạn và đang chuẩn bị phản hồi. Vui lòng quay lại kiểm tra sau ít phút.
-                        </span>
+                      {(contact.messages || []).map((message) => {
+                        const isAdmin = message.senderRole === "ADMIN";
+                        return (
+                          <div
+                            key={message.id ?? `${message.senderRole}-${message.createdAt}`}
+                            className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                                isAdmin
+                                  ? "rounded-tr-sm border border-amber-100 bg-amber-50"
+                                  : "rounded-tl-sm bg-stone-100"
+                              }`}
+                            >
+                              <p className={`mb-1 text-xs font-semibold ${isAdmin ? "text-amber-800" : "text-stone-500"}`}>
+                                {isAdmin ? "Cửa hàng" : "Bạn"} · {formatDate(message.createdAt)}
+                              </p>
+                              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-stone-800">
+                                {message.message}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {!contact.adminReply && (contact.messages || []).length === 0 && (
+                        <p className="text-center text-xs italic text-stone-500">
+                          Cửa hàng đã tiếp nhận câu hỏi và sẽ phản hồi tại đây.
+                        </p>
                       )}
-                      </p>
+                    </div>
+                    <div className="border-t border-stone-100 pt-4">
+                      <label
+                        htmlFor={`contact-message-${contact.id}`}
+                        className="mb-2 block text-xs font-bold uppercase tracking-wider text-stone-600"
+                      >
+                        Trả lời cửa hàng
+                      </label>
+                      <textarea
+                        id={`contact-message-${contact.id}`}
+                        rows={3}
+                        value={messageDrafts[contact.id] || ""}
+                        onChange={(event) =>
+                          setMessageDrafts((currentDrafts) => ({
+                            ...currentDrafts,
+                            [contact.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="Nhập tin nhắn của bạn..."
+                        className="w-full resize-y rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-800 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      />
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleSendMessage(contact)}
+                          disabled={!(messageDrafts[contact.id] || "").trim() || sendingContactId === contact.id}
+                          className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Send className="h-4 w-4" />
+                          {sendingContactId === contact.id ? "Đang gửi..." : "Gửi tin nhắn"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </article>

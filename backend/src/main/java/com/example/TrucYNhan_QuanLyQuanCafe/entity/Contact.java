@@ -44,6 +44,10 @@ public class Contact {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC, id ASC")
+    private java.util.List<ContactMessage> messages = new java.util.ArrayList<>();
+
     public Contact() {}
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -69,4 +73,6 @@ public class Contact {
     public void setAdminReply(String adminReply) { this.adminReply = adminReply; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public java.util.List<ContactMessage> getMessages() { return messages; }
+    public void setMessages(java.util.List<ContactMessage> messages) { this.messages = messages; }
 }

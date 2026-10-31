@@ -1,6 +1,7 @@
 package com.example.TrucYNhan_QuanLyQuanCafe.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ContactResponse(
         Long id,
@@ -13,6 +14,7 @@ public record ContactResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         LocalDateTime deletedAt,
-        String adminReply
+        String adminReply,
+        List<ContactMessageResponse> messages
 ) {
 }

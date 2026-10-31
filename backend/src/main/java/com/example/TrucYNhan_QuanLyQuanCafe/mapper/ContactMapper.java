@@ -1,9 +1,13 @@
 package com.example.TrucYNhan_QuanLyQuanCafe.mapper;
 
 import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactRequest;
+import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactMessageResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.dto.ContactResponse;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Contact;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class ContactMapper {
@@ -29,6 +33,21 @@ public class ContactMapper {
             return null;
         }
 
+        List<ContactMessageResponse> messages = contact.getMessages().stream()
+                .map(message -> new ContactMessageResponse(
+                        message.getId(),
+                        message.getSenderRole(),
+                        message.getMessage(),
+                        message.getCreatedAt()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        if (messages.isEmpty() && contact.getAdminReply() != null && !contact.getAdminReply().isBlank()) {
+            messages.add(new ContactMessageResponse(
+                    null,
+                    "ADMIN",
+                    contact.getAdminReply(),
+                    contact.getUpdatedAt()));
+        }
+
         return new ContactResponse(
                 contact.getId(),
                 contact.getName(),
@@ -40,7 +59,8 @@ public class ContactMapper {
                 contact.getCreatedAt(),
                 contact.getUpdatedAt(),
                 contact.getDeletedAt(),
-                contact.getAdminReply()
+                contact.getAdminReply(),
+                messages
         );
     }
 }
