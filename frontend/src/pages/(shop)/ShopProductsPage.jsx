@@ -4,10 +4,18 @@ import PublicLayout from "../../layouts/PublicLayout";
 import ProductCard from "../../components/ProductCard";
 import { getProducts } from "../../services/productApi";
 import { getCategories } from "../../services/categoryApi";
-import { resolveCategoryImage, formatCurrency } from "../../utils/format";
+import {
+  formatCurrency,
+  resolveProductImage,
+  resolveCategoryImage,
+} from "../../utils/format";
 import Pagination from "../../components/Pagination";
+import allImage from "../../assets/all.jpg";
+
+
+
 const SORT_OPTIONS = [
- ,
+  ,
   { value: "price-asc", label: "Giá từ thấp đến cao" },
   { value: "price-desc", label: "Giá từ cao tới thấp" },
 ];
@@ -27,7 +35,7 @@ function mapProduct(p) {
     originalPrice: original,
     rating: 5,
     badge: p.tag ?? (p.salePrice ? "sale" : null),
-    image: p.image,
+    image: p.image ?? p.imageUrl ?? p.image_url ?? "",
     quantity: p.quantity ?? 100,
   };
 }
@@ -172,9 +180,9 @@ export default function ShopProductsPage() {
                   }`}
               >
                 <img
-                  src={resolveCategoryImage(null, 99)}
-                  alt="All"
-                  className="w-full h-full object-cover rounded-full"
+                  src={allImage}
+                  alt="All Coffee"
+                  className="w-full h-full rounded-full object-cover"
                 />
               </div>
               <span className="font-heading font-semibold text-stone-800 text-sm mt-3 group-hover:text-amber-800 transition-colors">
@@ -199,11 +207,16 @@ export default function ShopProductsPage() {
                     : "hover:ring-1 hover:ring-amber-600"
                     }`}
                 >
-                  <img
-                    src={resolveCategoryImage(cat.image, idx)}
-                    alt={cat.name}
-                    className="w-full h-full object-cover rounded-full"
-                  />
+                  {resolveCategoryImage(cat.image) && (
+                    <img
+                      src={resolveCategoryImage(cat.image)}
+                      alt={cat.name}
+                      className="w-full h-full object-cover rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
                 </div>
                 <span className="font-heading font-semibold text-stone-800 text-sm mt-3 group-hover:text-amber-800 transition-colors text-center max-w-[120px] truncate">
                   {cat.name}
@@ -423,11 +436,16 @@ export default function ShopProductsPage() {
                       className="flex flex-col sm:flex-row items-center gap-6 bg-white border border-stone-200 rounded-lg p-4 hover:shadow-md transition-shadow group"
                     >
                       <div className="w-32 h-32 bg-[#f8f6f2] rounded p-2 flex-shrink-0 flex items-center justify-center">
-                        <img
-                          src={resolveCategoryImage(p.image, p.id)}
-                          alt={p.name}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                        />
+                        {p.image && (
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
                       </div>
                       <div className="flex-1 text-center sm:text-left">
                         <span className="text-xs text-stone-400 uppercase tracking-wider">
