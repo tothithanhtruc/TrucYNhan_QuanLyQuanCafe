@@ -144,7 +144,13 @@ export default function ContactInboxPage() {
                         Phản hồi từ cửa hàng
                       </div>
                       <p className="whitespace-pre-wrap break-words rounded-xl border border-amber-100 bg-amber-50/70 p-4 text-sm leading-relaxed text-stone-800">
-                        {contact.adminReply}
+                        {contact.adminReply ? (
+                        contact.adminReply
+                      ) : (
+                        <span className="italic text-stone-500">
+                          Cửa hàng đã tiếp nhận câu hỏi của bạn và đang chuẩn bị phản hồi. Vui lòng quay lại kiểm tra sau ít phút.
+                        </span>
+                      )}
                       </p>
                     </div>
                   </div>

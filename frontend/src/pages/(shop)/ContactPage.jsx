@@ -39,7 +39,7 @@ export default function ContactPage() {
     try {
       const res = await sendContact(payload);
       if (res.status === 200 || res.status === 201) {
-        setSuccess("Cảm ơn bạn! Thông tin liên hệ đã được lưu thành công vào hệ thống. Chúng tôi sẽ sớm liên hệ lại.");
+        setSuccess("Cảm ơn bạn! Thông tin liên hệ đã được lưu thành công. Bạn có thể theo dõi phản hồi của cửa hàng tại Hộp thư phản hồi (/inbox) hoặc mục Hồ sơ của bạn.");
         setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
       } else {
         setError("Không thể lưu thông tin liên hệ. Vui lòng thử lại.");
@@ -84,6 +84,29 @@ export default function ContactPage() {
           </p>
         </div>
       </section>
+
+      {/* ═══════════ NOTICE: INBOX LINK ═══════════ */}
+      <div className="max-w-7xl mx-auto px-4 pt-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-900 shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-stone-900">Bạn đã từng gửi câu hỏi hoặc liên hệ trước đó?</h2>
+              <p className="text-xs text-stone-600 mt-0.5">Kiểm tra ngay câu trả lời từ cửa hàng trong Hộp thư phản hồi của tài khoản.</p>
+            </div>
+          </div>
+          <Link
+            to="/inbox"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition shrink-0"
+          >
+            Xem Hộp Thư Phản Hồi
+          </Link>
+        </div>
+      </div>
 
       {/* ═══════════ CONTACT FORM & INFO ═══════════ */}
       <section className="py-16 bg-white">

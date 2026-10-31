@@ -26,7 +26,11 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     productsCount: 0,
     ordersCount: 0,
+    validOrdersCount: 0,
     pendingOrdersCount: 0,
+    inProgressOrdersCount: 0,
+    completedOrdersCount: 0,
+    cancelledOrdersCount: 0,
     totalRevenue: 0,
     tablesCount: 0,
     occupiedTablesCount: 0,
@@ -71,18 +75,47 @@ export default function DashboardPage() {
         setLoadError(`Không thể tải ${failedRequests} nguồn dữ liệu từ API.`);
       }
 
-      const pendingOrders = orders.filter(
-        (o) =>
-          o.status?.toUpperCase() === "PENDING" ||
-          o.status?.toUpperCase() === "CHỜ XỬ LÝ" ||
-          !o.status
-      );
+      // Phân loại đơn hàng chính xác
+      const pendingOrders = orders.filter((o) => {
+        const s = (o.status || "").toUpperCase();
+        return s === "PENDING" || s === "CHỜ XÁC NHẬN" || s === "CHỜ XỬ LÝ" || !o.status;
+      });
 
-      const completedOrders = orders.filter(
-        (o) =>
-          o.status?.toUpperCase() === "COMPLETED" ||
-          o.status?.toUpperCase() === "DELIVERED"
-      );
+      const inProgressOrders = orders.filter((o) => {
+        const s = (o.status || "").toUpperCase();
+        return (
+          s === "PENDING" ||
+          s === "CHỜ XÁC NHẬN" ||
+          s === "CHỜ XỬ LÝ" ||
+          s === "CONFIRMED" ||
+          s === "PREPARING" ||
+          s === "SHIPPING" ||
+          s === "ĐANG CHUẨN BỊ" ||
+          s === "ĐANG PHA CHẾ" ||
+          s === "ĐANG GIAO" ||
+          !o.status
+        );
+      });
+
+      const completedOrders = orders.filter((o) => {
+        const s = (o.status || "").toUpperCase();
+        return (
+          s === "COMPLETED" ||
+          s === "DELIVERED" ||
+          s === "HOÀN THÀNH" ||
+          s === "ĐÃ GIAO"
+        );
+      });
+
+      const cancelledOrders = orders.filter((o) => {
+        const s = (o.status || "").toUpperCase();
+        return s === "CANCELLED" || s === "ĐÃ HỦY";
+      });
+
+      const validOrders = orders.filter((o) => {
+        const s = (o.status || "").toUpperCase();
+        return s !== "CANCELLED" && s !== "ĐÃ HỦY";
+      });
 
       const totalRev = completedOrders.reduce(
         (sum, o) => sum + Number(o.totalAmount || 0),
@@ -98,7 +131,11 @@ export default function DashboardPage() {
       setStats({
         productsCount: products.length,
         ordersCount: orders.length,
+        validOrdersCount: validOrders.length,
         pendingOrdersCount: pendingOrders.length,
+        inProgressOrdersCount: inProgressOrders.length,
+        completedOrdersCount: completedOrders.length,
+        cancelledOrdersCount: cancelledOrders.length,
         totalRevenue: totalRev,
         tablesCount: tablesData.length,
         occupiedTablesCount: occupied,
@@ -131,10 +168,24 @@ export default function DashboardPage() {
 
   const getOrderStatusBadge = (status) => {
     const s = (status || "PENDING").toUpperCase();
-    if (s === "COMPLETED" || s === "HOÀN THÀNH") {
+    if (s === "COMPLETED" || s === "HOÀN THÀNH" || s === "DELIVERED" || s === "ĐÃ GIAO") {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
           <CheckCircle2 className="w-3 h-3" /> Hoàn thành
+        </span>
+      );
+    }
+    if (
+      s === "CONFIRMED" ||
+      s === "PREPARING" ||
+      s === "SHIPPING" ||
+      s === "ĐANG CHUẨN BỊ" ||
+      s === "ĐANG PHA CHẾ" ||
+      s === "ĐANG GIAO"
+    ) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <Clock className="w-3 h-3" /> Đang chuẩn bị
         </span>
       );
     }
@@ -147,7 +198,7 @@ export default function DashboardPage() {
     }
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-        <Clock className="w-3 h-3" /> Chờ xử lý
+        <Clock className="w-3 h-3" /> Chờ xác nhận
       </span>
     );
   };
@@ -226,12 +277,27 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mt-3">
-              <p className="text-2xl font-bold text-stone-900">
-                {stats.ordersCount}
-              </p>
-              <p className="text-xs text-amber-700 mt-1 font-medium">
-                {stats.pendingOrdersCount} đơn đang chờ xử lý
-              </p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-stone-900">
+                  {stats.ordersCount}
+                </p>
+                <span className="text-xs font-medium text-stone-500">
+                  ({stats.validOrdersCount} đơn hợp lệ)
+                </span>
+              </div>
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium">
+                <span className="inline-flex items-center text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                  ✓ {stats.completedOrdersCount} hoàn tất
+                </span>
+                <span className="inline-flex items-center text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+                  ⏳ {stats.inProgressOrdersCount} đang xử lý
+                </span>
+                {stats.cancelledOrdersCount > 0 && (
+                  <span className="inline-flex items-center text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">
+                    ✕ {stats.cancelledOrdersCount} hủy
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
