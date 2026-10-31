@@ -221,19 +221,7 @@ export default function Navbar() {
                       >
                         Hồ sơ của tôi
                       </Link>
-                      <Link
-                        to="/inbox"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
-                      >
-                        <Mail className="h-4 w-4 text-amber-800" />
-                        <span className="flex-1">Phản hồi liên hệ</span>
-                        {unreadContactCount > 0 && (
-                          <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                            {unreadContactCount > 9 ? "9+" : unreadContactCount}
-                          </span>
-                        )}
-                      </Link>
+                      
                       <button
                         type="button"
                         onClick={handleLogout}

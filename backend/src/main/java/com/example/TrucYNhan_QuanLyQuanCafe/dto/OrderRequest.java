@@ -13,6 +13,10 @@ public record OrderRequest(
 
         Long userId,
 
+        String customerName,
+
+        String customerPhone,
+
         Long employeeId,
 
         Long tableId,

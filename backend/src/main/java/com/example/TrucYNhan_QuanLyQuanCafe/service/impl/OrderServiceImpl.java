@@ -107,6 +107,14 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setOrderCode("ORD-" + UUID.randomUUID().toString().replace("-", ""));
         order.setUser(user);
+        String custName = request.customerName() != null && !request.customerName().isBlank()
+                ? request.customerName().trim()
+                : (user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : user.getUsername());
+        order.setCustomerName(custName);
+        String custPhone = request.customerPhone() != null && !request.customerPhone().isBlank()
+                ? request.customerPhone().trim()
+                : user.getPhone();
+        order.setCustomerPhone(custPhone);
         order.setOrderType("ONLINE");
         order.setTotalAmount(total);
         order.setShippingFee(BigDecimal.ZERO);
@@ -139,6 +147,8 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với id: " + id));
 
         existing.setOrderCode(request.orderCode());
+        if (request.customerName() != null) existing.setCustomerName(request.customerName());
+        if (request.customerPhone() != null) existing.setCustomerPhone(request.customerPhone());
         if (request.orderType() != null) existing.setOrderType(request.orderType());
         if (request.totalAmount() != null) existing.setTotalAmount(request.totalAmount());
         if (request.shippingFee() != null) existing.setShippingFee(request.shippingFee());

@@ -12,6 +12,12 @@ public record CheckoutRequest(
         @Size(max = 255, message = "Địa chỉ giao hàng không được vượt quá 255 ký tự")
         String deliveryAddress,
 
+        @Size(max = 100, message = "Tên khách hàng không được vượt quá 100 ký tự")
+        String customerName,
+
+        @Size(max = 30, message = "Số điện thoại không được vượt quá 30 ký tự")
+        String customerPhone,
+
         @Size(max = 255, message = "Ghi chú không được vượt quá 255 ký tự")
         String note,
 

@@ -131,7 +131,7 @@ export default function AdminTrashPage() {
                   <div>
                     <p className="font-semibold text-stone-800">{getLabel(item)}</p>
                     {activeTab === "orders" && (
-                      <p className="text-xs text-stone-500 mt-1">{item.username || "Khách tại quầy"}</p>
+                      <p className="text-xs text-stone-500 mt-1">{item.customerName || (item.note?.match(/Tên:\s*([^|]+)/i)?.[1]?.trim()) || item.username || "Khách tại quầy"}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

@@ -388,7 +388,7 @@ export default function DashboardPage() {
                         <td className="py-3 px-4 text-stone-700">
                           {order.tableName
                             ? `Bàn ${order.tableName}`
-                            : order.username || "Khách vãng lai"}
+                            : (order.customerName || (order.note?.match(/Tên:\s*([^|]+)/i)?.[1]?.trim()) || order.username || "Khách vãng lai")}
                         </td>
                         <td className="py-3 px-4 text-stone-600">
                           {order.orderType || "Tại quán"}
