@@ -12,6 +12,8 @@ import LoginPage from "./pages/(shop)/LoginPage";
 import RegisterPage from "./pages/(shop)/RegisterPage";
 import ContactInboxPage from "./pages/(shop)/ContactInboxPage";
 import CartPage from "./pages/(shop)/CartPage";
+import CheckoutPage from "./pages/(shop)/CheckoutPage";
+import ProfilePage from "./pages/(shop)/ProfilePage";
 
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -37,7 +39,18 @@ export default function App() {
         <Route path="/shop/:id" element={<ProductDetailPage />} />
         <Route path="/products" element={<ShopProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
-        <Route path="/cart" element={<CartPage />} />
+        <Route
+          path="/cart"
+          element={<ProtectedRoute><CartPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/checkout"
+          element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/profile"
+          element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
+        />
 
         {/* Bài viết & Tin tức */}
         <Route path="/blog" element={<BlogPage />} />
@@ -51,11 +64,6 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/inbox" element={<ContactInboxPage />} />
-        <Route
-          path="/cart"
-          element={<ProtectedRoute><CartPage /></ProtectedRoute>}
-        />
-
         {/* Quản trị (Admin) */}
 
         <Route
@@ -85,6 +93,10 @@ export default function App() {
         <Route
           path="/admin/users"
           element={<ProtectedRoute adminOnly><AdminUsersPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/contacts"
+          element={<ProtectedRoute adminOnly><AdminContactsPage /></ProtectedRoute>}
         />
         <Route
           path="/admin/trash"

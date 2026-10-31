@@ -18,4 +18,5 @@ public interface OrderService {
     void permanentlyDelete(Long id);
     List<OrderResponse> getByStatus(String status);
     List<OrderResponse> getByUserId(Long userId);
+    List<OrderResponse> getByUsername(String username);
 }

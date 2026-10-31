@@ -29,7 +29,7 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const pageSize = 10; 
+  const pageSize = 10;
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
@@ -76,13 +76,11 @@ export default function AdminProductsPage() {
       ]);
 
       if (prodRes.status === "fulfilled") {
-        const prodData =
-          prodRes.value.data?.data || prodRes.value.data || [];
+        const prodData = prodRes.value.data?.data || prodRes.value.data || [];
         setProducts(sortNewestFirst(prodData));
       }
       if (catRes.status === "fulfilled") {
-        const catData =
-          catRes.value.data?.data || catRes.value.data || [];
+        const catData = catRes.value.data?.data || catRes.value.data || [];
         setCategories(catData);
       }
     } catch (err) {
@@ -117,7 +115,10 @@ export default function AdminProductsPage() {
       showToast("Tải ảnh lên thành công!");
     } catch (error) {
       console.error("Lỗi khi tải ảnh sản phẩm:", error);
-      showToast(error.response?.data?.message || "Không thể tải ảnh lên", "error");
+      showToast(
+        error.response?.data?.message || "Không thể tải ảnh lên",
+        "error",
+      );
     } finally {
       setUploadingImage(false);
       event.target.value = "";
@@ -138,7 +139,8 @@ export default function AdminProductsPage() {
     setEditingProduct(product);
     setFormData({
       name: product.name || "",
-      categoryId: product.categoryId || product.category?.id || (categories[0]?.id ?? ""),
+      categoryId:
+        product.categoryId || product.category?.id || (categories[0]?.id ?? ""),
       price: product.price || "",
       salePrice: product.salePrice || "",
       quantity: product.quantity ?? 100,
@@ -169,7 +171,9 @@ export default function AdminProductsPage() {
 
     const payload = {
       name: formData.name.trim(),
-      categoryId: Number(formData.categoryId) || (categories[0]?.id ?? 1),
+      category: {
+        id: Number(formData.categoryId),
+      },
       price: Number(formData.price),
       salePrice: formData.salePrice ? Number(formData.salePrice) : null,
       quantity: Number(formData.quantity) || 0,
@@ -194,7 +198,8 @@ export default function AdminProductsPage() {
     } catch (err) {
       console.error("Lỗi khi lưu sản phẩm:", err);
       const errMsg =
-        err.response?.data?.message || "Lỗi khi lưu thông tin sản phẩm. Vui lòng thử lại.";
+        err.response?.data?.message ||
+        "Lỗi khi lưu thông tin sản phẩm. Vui lòng thử lại.";
       setFormError(errMsg);
     } finally {
       setSubmitting(false);
@@ -230,7 +235,7 @@ export default function AdminProductsPage() {
   // Danh sách sản phẩm của trang hiện tại
   const paginatedProducts = filteredProducts.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
   return (
     <AdminLayout title="Quản Lý Sản Phẩm">
@@ -238,10 +243,11 @@ export default function AdminProductsPage() {
         {/* Notification Toast */}
         {notification && (
           <div
-            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${notification.type === "error"
-              ? "bg-rose-50 text-rose-800 border-rose-200"
-              : "bg-emerald-50 text-emerald-800 border-emerald-200"
-              }`}
+            className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border flex items-center gap-2 text-sm font-semibold transition-all ${
+              notification.type === "error"
+                ? "bg-rose-50 text-rose-800 border-rose-200"
+                : "bg-emerald-50 text-emerald-800 border-emerald-200"
+            }`}
           >
             {notification.type === "error" ? (
               <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -269,7 +275,9 @@ export default function AdminProductsPage() {
               title="Làm mới danh sách"
               className="p-2.5 bg-white border border-stone-200 hover:bg-stone-50 text-stone-600 rounded-xl transition"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
             </button>
             <button
               onClick={handleOpenAddModal}
@@ -337,7 +345,10 @@ export default function AdminProductsPage() {
               <tbody className="divide-y divide-stone-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-stone-400">
+                    <td
+                      colSpan={7}
+                      className="py-12 text-center text-stone-400"
+                    >
                       <div className="inline-flex items-center gap-2">
                         <RefreshCw className="w-5 h-5 animate-spin text-amber-700" />
                         Đang tải danh sách sản phẩm...
@@ -346,7 +357,10 @@ export default function AdminProductsPage() {
                   </tr>
                 ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-stone-400">
+                    <td
+                      colSpan={7}
+                      className="py-12 text-center text-stone-400"
+                    >
                       Không tìm thấy món nào phù hợp với bộ lọc
                     </td>
                   </tr>
@@ -356,10 +370,14 @@ export default function AdminProductsPage() {
                       p.category?.name ||
                       categories.find((c) => c.id === p.categoryId)?.name ||
                       "Cà phê";
-                    const isSale = p.salePrice && Number(p.salePrice) < Number(p.price);
+                    const isSale =
+                      p.salePrice && Number(p.salePrice) < Number(p.price);
 
                     return (
-                      <tr key={p.id} className="hover:bg-stone-50/80 transition group">
+                      <tr
+                        key={p.id}
+                        className="hover:bg-stone-50/80 transition group"
+                      >
                         {/* Image + Name */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
@@ -429,7 +447,8 @@ export default function AdminProductsPage() {
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Đang bán
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{" "}
+                              Đang bán
                             </span>
                           )}
                         </td>
@@ -460,7 +479,6 @@ export default function AdminProductsPage() {
               </tbody>
             </table>
           </div>
-
         </div>
         {/* Phân trang */}
         <Pagination
@@ -474,7 +492,9 @@ export default function AdminProductsPage() {
             <div className="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-stone-200 my-8">
               <div className="flex items-center justify-between pb-4 border-b border-stone-100">
                 <h3 className="text-lg font-bold text-stone-900">
-                  {editingProduct ? "Cập Nhật Món / Sản Phẩm" : "Thêm Món Mới Vào Menu"}
+                  {editingProduct
+                    ? "Cập Nhật Món / Sản Phẩm"
+                    : "Thêm Món Mới Vào Menu"}
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
@@ -726,9 +746,12 @@ export default function AdminProductsPage() {
               <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 mx-auto flex items-center justify-center mb-4">
                 <Trash2 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-stone-900">Xóa Sản Phẩm?</h3>
+              <h3 className="text-lg font-bold text-stone-900">
+                Xóa Sản Phẩm?
+              </h3>
               <p className="text-xs text-stone-500 mt-2">
-                Hành động này sẽ xóa sản phẩm khỏi thực đơn quán. Bạn có chắc chắn muốn xóa?
+                Hành động này sẽ xóa sản phẩm khỏi thực đơn quán. Bạn có chắc
+                chắn muốn xóa?
               </p>
               <div className="mt-6 flex items-center justify-center gap-3">
                 <button
@@ -745,12 +768,9 @@ export default function AdminProductsPage() {
                 </button>
               </div>
             </div>
-
           </div>
         )}
-
       </div>
-
     </AdminLayout>
   );
 }

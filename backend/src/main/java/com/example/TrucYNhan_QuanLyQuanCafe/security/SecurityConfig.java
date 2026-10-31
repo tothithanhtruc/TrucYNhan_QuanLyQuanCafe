@@ -63,6 +63,9 @@ public class SecurityConfig {
                 // Đăng nhập JWT không cần auth (J02)
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders/checkout").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/orders/my-orders").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/orders").hasRole("ADMIN")
                 // Xem danh sách sản phẩm không cần auth 
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
@@ -73,7 +76,7 @@ public class SecurityConfig {
                 // Xem danh sách banner không cần auth
                 .requestMatchers(HttpMethod.GET, "/api/banners", "/api/banners/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/uploads/image").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/uploads/image").authenticated()
                 // Gửi liên hệ không cần auth
                 .requestMatchers(HttpMethod.POST, "/api/contacts", "/api/contacts/**").permitAll()
                 // Các endpoint thùng rác cần xác thực, kể cả khi chạy sau proxy

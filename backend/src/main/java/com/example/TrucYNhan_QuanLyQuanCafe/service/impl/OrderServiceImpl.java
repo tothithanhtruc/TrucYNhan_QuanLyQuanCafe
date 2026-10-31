@@ -216,6 +216,15 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng: " + username));
+        return orderRepository.findByUserIdAndDeletedAtIsNull(user.getId()).stream()
+                .map(orderMapper::toResponse).toList();
+    }
+
     private BigDecimal getUnitPrice(Product product) {
         BigDecimal salePrice = product.getSalePrice();
         if (salePrice != null && salePrice.compareTo(BigDecimal.ZERO) > 0
