@@ -1,4 +1,4 @@
-
+﻿
 import { useEffect, useRef, useState } from "react";
 import {
   useParams,
@@ -163,7 +163,21 @@ export default function ProductDetailPage() {
       );
 
       if (pendingAction.buyNow) {
-        navigate("/cart");
+        const buyNowItem = {
+          id: product.id,
+          name: product.name,
+          image: product.image,
+          price: currentPrice,
+          stock: Number(product.quantity ?? 0),
+          quantity: pendingAction.quantity,
+        };
+
+        sessionStorage.setItem(
+          "checkout-items",
+          JSON.stringify([buyNowItem])
+        );
+
+        navigate("/checkout");
       } else {
         setCartMessage(
           "Đã thêm sản phẩm vào giỏ hàng."
@@ -299,11 +313,40 @@ export default function ProductDetailPage() {
     addCurrentProductToCart();
   };
 
-  // Mua ngay
+  
   const handleBuyNow = () => {
-    if (addCurrentProductToCart(true)) {
-      navigate("/checkout");
+    //kiem tra dang nhap
+    if (!isLoggedIn()) {
+      navigate("/login", {
+        state: {
+          from: location.pathname,
+          message:
+            "Vui lòng đăng nhập hoặc đăng ký để mua hàng.",
+          pendingCartAction: {
+            quantity,
+            buyNow: true,
+          },
+        },
+      });
+      return;
     }
+
+    
+    const buyNowItem = {
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: currentPrice,
+      stock,
+      quantity,
+    };
+
+    sessionStorage.setItem(
+      "checkout-items",
+      JSON.stringify([buyNowItem])
+    );
+
+    navigate("/checkout");
   };
 
   return (
