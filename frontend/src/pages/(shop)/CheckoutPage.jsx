@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import { checkout } from "../../services/orderApi";
 import { removeFromCart } from "../../services/cartApi";
+import { createVNPayPaymentUrl, simulateVNPayPayment } from "../../services/paymentApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
 import { isLoggedIn } from "../../services/authApi";
 import { getMyProfile } from "../../services/profileApi";
@@ -15,12 +16,44 @@ import {
   Wallet,
   Banknote,
   Truck,
+  Copy,
+  Check,
+  ShieldCheck,
 } from "lucide-react";
 
+const BANK_OPTIONS = [
+  { code: "NCB", name: "NCB - Ngân hàng TMCP Quốc Dân (Khuyên dùng Sandbox)" },
+  { code: "VCB", name: "VCB - Ngân hàng Ngoại Thương (Vietcombank)" },
+  { code: "TCB", name: "TCB - Ngân hàng Kỹ Thương (Techcombank)" },
+  { code: "MB", name: "MB - Ngân hàng Quân Đội (MBBank)" },
+  { code: "BIDV", name: "BIDV - Ngân hàng Đầu tư và Phát triển VN" },
+  { code: "CTG", name: "CTG - Ngân hàng Công Thương (VietinBank)" },
+  { code: "ACB", name: "ACB - Ngân hàng Á Châu (ACB)" },
+  { code: "VPB", name: "VPB - Ngân hàng Việt Nam Thịnh Vượng (VPBank)" },
+  { code: "TPB", name: "TPB - Ngân hàng Tiên Phong (TPBank)" },
+  { code: "AGRIBANK", name: "AGRIBANK - Ngân hàng Nông nghiệp" }
+];
+
 const PAYMENT_METHODS = [
-  { id: "cod", label: "Thanh toán khi nhận hàng (COD)", icon: Banknote },
-  { id: "banking", label: "Chuyển khoản ngân hàng", icon: CreditCard },
-  { id: "wallet", label: "Ví điện tử (MoMo, ZaloPay)", icon: Wallet },
+  {
+    id: "cod",
+    label: "Thanh toán khi nhận hàng (COD)",
+    subLabel: "Thanh toán bằng tiền mặt trực tiếp khi nhận hàng",
+    icon: Banknote,
+  },
+  {
+    id: "vnpay",
+    label: "Thanh toán online qua VNPAY Sandbox",
+    subLabel: "Thẻ ngân hàng NCB / ATM / VNPAY-QR (Môi trường test)",
+    icon: CreditCard,
+    badge: "Thử nghiệm ngay",
+  },
+  {
+    id: "wallet",
+    label: "Ví điện tử khác (MoMo / ZaloPay)",
+    subLabel: "Chuyển khoản qua mã QR",
+    icon: Wallet,
+  },
 ];
 
 export default function CheckoutPage() {
@@ -34,8 +67,35 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [paymentMethod, setPaymentMethod] = useState("vnpay");
+  const [vnpayBankCode, setVnpayBankCode] = useState("NCB");
+  const [vnpayCardNumber, setVnpayCardNumber] = useState("9704198526191432198");
+  const [vnpayCardHolder, setVnpayCardHolder] = useState("NGUYEN VAN A");
+  const [vnpayIssueDate, setVnpayIssueDate] = useState("07/15");
+  const [vnpayOtp, setVnpayOtp] = useState("123456");
+
+  const fillSampleCard = () => {
+    setVnpayBankCode("NCB");
+    setVnpayCardNumber("9704198526191432198");
+    setVnpayCardHolder("NGUYEN VAN A");
+    setVnpayIssueDate("07/15");
+    setVnpayOtp("123456");
+  };
+
+  const clearCardInfo = () => {
+    setVnpayCardNumber("");
+    setVnpayCardHolder("");
+    setVnpayIssueDate("");
+    setVnpayOtp("");
+  };
+  const [copiedField, setCopiedField] = useState("");
   const [note, setNote] = useState("");
+
+  const copyToClipboard = (text, fieldName) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(""), 2000);
+  };
 
   useEffect(() => {
     // Đọc danh sách sản phẩm đã chọn từ sessionStorage
@@ -112,13 +172,17 @@ export default function CheckoutPage() {
     setError("");
 
     try {
+      const paymentLabel = paymentMethod === "vnpay"
+        ? `VNPAY Sandbox (${vnpayBankCode || "Tất cả ngân hàng"})`
+        : PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label || paymentMethod;
+
       const response = await checkout({
         deliveryAddress: deliveryAddress.trim(),
         note:
           [
             `Tên: ${customerName.trim()}`,
             `SĐT: ${customerPhone.trim()}`,
-            `Thanh toán: ${PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label || paymentMethod}`,
+            `Thanh toán: ${paymentLabel}`,
             note.trim() || "",
           ]
             .filter(Boolean)
@@ -129,11 +193,23 @@ export default function CheckoutPage() {
         })),
       });
 
-      setOrder(response.data?.data ?? response.data);
+      const createdOrder = response.data?.data ?? response.data;
 
       // Xóa các sản phẩm đã đặt khỏi giỏ hàng
       items.forEach((item) => removeFromCart(item.id));
       sessionStorage.removeItem("checkout-items");
+
+      // Nếu chọn thanh toán VNPAY -> tạo link thanh toán và redirect sang Cổng VNPAY Sandbox
+      if (paymentMethod === "vnpay") {
+        navigate(
+          `/payment/vnpay-gateway?orderCode=${encodeURIComponent(
+            createdOrder.orderCode
+          )}&amount=${createdOrder.totalAmount}`
+        );
+        return;
+      }
+
+      setOrder(createdOrder);
     } catch (requestError) {
       if (requestError.response?.status === 401) {
         navigate("/login", {
@@ -333,19 +409,50 @@ export default function CheckoutPage() {
                               : "text-stone-400"
                           }`}
                         />
-                        <span
-                          className={`text-sm font-medium ${
-                            paymentMethod === method.id
-                              ? "text-amber-900"
-                              : "text-stone-700"
-                          }`}
-                        >
-                          {method.label}
-                        </span>
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-sm font-medium ${
+                                paymentMethod === method.id
+                                  ? "text-amber-900"
+                                  : "text-stone-700"
+                              }`}
+                            >
+                              {method.label}
+                            </span>
+                            {method.badge && (
+                              <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                                {method.badge}
+                              </span>
+                            )}
+                          </div>
+                          {method.subLabel && (
+                            <span className="text-xs text-stone-500 mt-0.5">
+                              {method.subLabel}
+                            </span>
+                          )}
+                        </div>
                       </label>
                     );
                   })}
                 </div>
+
+                {/* Thông báo chuyển sang cổng VNPAY */}
+                {paymentMethod === "vnpay" && (
+                  <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4 text-xs text-blue-900 animate-in fade-in space-y-2">
+                    <div className="flex items-center gap-2 font-bold text-sm text-blue-900">
+                      <CreditCard className="h-4 w-4 text-blue-700" />
+                      <span>Cổng thanh toán điện tử VNPAY Sandbox</span>
+                    </div>
+                    <p className="text-stone-600 leading-relaxed">
+                      Sau khi nhấn <strong>"Xác nhận đặt hàng"</strong>, hệ thống sẽ tự động chuyển bạn sang <strong>Trang Cổng VNPAY</strong> để chọn ngân hàng, nhập thông tin thẻ và mã OTP xác nhận thanh toán.
+                    </p>
+                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-1">
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                      <span>Môi trường thử nghiệm an toàn, không trừ tiền thật.</span>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* Ghi chú */}
