@@ -7,6 +7,8 @@ import {
   uploadProfileImage,
 } from "../../services/profileApi";
 import { getMyOrders } from "../../services/orderApi";
+import { getMyContactReplies } from "../../services/contactApi";
+import { MessageSquare, RefreshCw } from "lucide-react";
 import { isLoggedIn, logout } from "../../services/authApi";
 import { formatCurrency } from "../../utils/format";
 import {
@@ -43,6 +45,8 @@ export default function ProfilePage() {
 
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [userContacts, setUserContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,6 +77,7 @@ export default function ProfilePage() {
     }
     fetchProfile();
     fetchOrders();
+    fetchUserContacts();
   }, [navigate]);
 
   const showToast = (message, type = "success") => {
@@ -105,6 +110,18 @@ export default function ProfilePage() {
       setError("Không thể tải thông tin hồ sơ.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserContacts = async () => {
+    setContactsLoading(true);
+    try {
+      const res = await getMyContactReplies();
+      setUserContacts(res.data?.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải phản hồi liên hệ:", err);
+    } finally {
+      setContactsLoading(false);
     }
   };
 
@@ -554,6 +571,106 @@ export default function ProfilePage() {
                   </article>
                 );
               })
+            )}
+          </div>
+        )}
+
+        {/* ─── Tab: Phản hồi liên hệ ─── */}
+        {activeTab === "contacts" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2">
+              <div>
+                <h3 className="font-heading text-lg font-bold text-stone-900">
+                  Câu hỏi & Phản hồi từ Cửa hàng
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Xem lại phản hồi từ admin cho các liên hệ bạn đã gửi.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchUserContacts}
+                disabled={contactsLoading}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${contactsLoading ? "animate-spin" : ""}`} />
+                Làm mới
+              </button>
+            </div>
+
+            {contactsLoading ? (
+              <div className="rounded-2xl border border-stone-200 bg-white py-12 text-center text-sm text-stone-500">
+                Đang tải phản hồi...
+              </div>
+            ) : userContacts.length === 0 ? (
+              <div className="rounded-2xl border border-stone-200 bg-white px-6 py-12 text-center">
+                <Mail className="mx-auto h-10 w-10 text-stone-300" />
+                <p className="mt-3 text-sm font-semibold text-stone-700">Chưa có liên hệ nào</p>
+                <p className="mt-1 text-xs text-stone-500">
+                  Bạn có thắc mắc hoặc cần hỗ trợ? Hãy gửi tin nhắn cho chúng tôi.
+                </p>
+                <Link
+                  to="/contact"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700"
+                >
+                  Gửi liên hệ ngay
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {userContacts.map((contact) => (
+                  <article
+                    key={contact.id}
+                    className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xs"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 bg-stone-50/80 px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-stone-900 text-sm">
+                          {contact.subject || "Liên hệ"}
+                        </span>
+                        {contact.adminReply ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                            Đã phản hồi
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                            Đang chờ phản hồi
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-stone-500">
+                        {formatDate(contact.createdAt)}
+                      </span>
+                    </div>
+
+                    <div className="grid gap-3 p-5 text-sm">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-stone-500 block mb-1">
+                          Nội dung bạn gửi:
+                        </span>
+                        <p className="rounded-xl bg-stone-50 p-3 text-stone-700 text-sm">
+                          {contact.message}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-800 block mb-1">
+                          Phản hồi từ Admin:
+                        </span>
+                        {contact.adminReply ? (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-stone-800 text-sm leading-relaxed">
+                            {contact.adminReply}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs italic text-stone-500">
+                            Cửa hàng đang xử lý câu hỏi này. Bạn vui lòng kiểm tra lại sau nhé.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
             )}
           </div>
         )}

@@ -115,7 +115,8 @@ export default function Navbar() {
               to="/inbox"
               onClick={() => setIsUserMenuOpen(false)}
               className="rounded-full bg-amber-50 p-2.5 text-amber-900 transition hover:bg-amber-100 sm:p-3"
-              aria-label="Hộp thư"
+              aria-label="Hộp thư phản hồi"
+              title="Hộp thư phản hồi từ Admin"
             >
               <Mail className="h-4 w-4" />
             </Link>
@@ -161,6 +162,14 @@ export default function Navbar() {
                         className="block px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
                       >
                         Hồ sơ của tôi
+                      </Link>
+                      <Link
+                        to="/inbox"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 transition hover:bg-amber-50 hover:text-amber-900"
+                      >
+                        <Mail className="h-4 w-4 text-amber-800" />
+                        Phản hồi liên hệ
                       </Link>
                       <button
                         type="button"

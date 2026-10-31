@@ -54,8 +54,10 @@ public class ContactServiceImpl implements ContactService {
     @Transactional(readOnly = true)
     public List<ContactResponse> getInbox(String username) {
         return userRepository.findByUsername(username)
-                .map(user -> contactRepository
-                        .findAllByUserIdAndDeletedAtIsNullAndAdminReplyIsNotNullOrderByCreatedAtDesc(user.getId()))
+                .map(user -> {
+                    String email = user.getEmail() != null ? user.getEmail().trim() : "";
+                    return contactRepository.findUserInboxContacts(user.getId(), email);
+                })
                 .orElseGet(List::of)
                 .stream()
                 .map(contactMapper::toResponse)
@@ -75,6 +77,9 @@ public class ContactServiceImpl implements ContactService {
         Contact contact = contactMapper.toEntity(request);
         if (username != null) {
             userRepository.findByUsername(username).ifPresent(contact::setUser);
+        }
+        if (contact.getUser() == null && request.email() != null && !request.email().isBlank()) {
+            userRepository.findFirstByEmailIgnoreCase(request.email().trim()).ifPresent(contact::setUser);
         }
         return contactMapper.toResponse(contactRepository.save(contact));
     }
@@ -104,6 +109,9 @@ public class ContactServiceImpl implements ContactService {
             throw new ResourceNotFoundException("Không thể phản hồi liên hệ đang ở trong thùng rác: " + id);
         }
         contact.setAdminReply(request.reply().trim());
+        if (contact.getUser() == null && contact.getEmail() != null && !contact.getEmail().isBlank()) {
+            userRepository.findFirstByEmailIgnoreCase(contact.getEmail().trim()).ifPresent(contact::setUser);
+        }
         return contactMapper.toResponse(contactRepository.save(contact));
     }
 
