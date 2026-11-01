@@ -80,6 +80,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/banners", "/api/banners/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/uploads/image").authenticated()
+                // Quản lý nguyên liệu chỉ dành cho ADMIN
+                .requestMatchers("/api/ingredients/**").hasRole("ADMIN")
                 // Gửi liên hệ không cần auth
                 .requestMatchers(HttpMethod.POST, "/api/contacts/*/messages").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
@@ -97,6 +99,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/topics", "/api/topics/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")

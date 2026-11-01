@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import AdminLayout from "../../layouts/AdminLayout";
 import {
@@ -12,16 +13,21 @@ import {
   adminPermanentlyDeleteProduct,
   adminPermanentlyDeleteCategory,
   adminPermanentlyDeleteOrder,
+  adminGetDeletedIngredients,
+  adminRestoreIngredient,
+  adminPermanentlyDeleteIngredient,
 } from "../../services/adminApi";
 
 const tabs = [
   { id: "products", label: "Sản phẩm" },
   { id: "categories", label: "Danh mục" },
   { id: "orders", label: "Đơn hàng" },
+  { id: "ingredients", label: "Nguyên liệu" },
 ];
 
 export default function AdminTrashPage() {
-  const [activeTab, setActiveTab] = useState("products");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "products");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -33,6 +39,7 @@ export default function AdminTrashPage() {
         products: adminGetDeletedProducts,
         categories: adminGetDeletedCategories,
         orders: adminGetDeletedOrders,
+        ingredients: adminGetDeletedIngredients,
       };
       const response = await loaders[activeTab]();
       setItems(response.data?.data || []);
@@ -61,6 +68,10 @@ export default function AdminTrashPage() {
       orders: {
         restore: adminRestoreOrder,
         permanent: adminPermanentlyDeleteOrder,
+      },
+      ingredients: {
+        restore: adminRestoreIngredient,
+        permanent: adminPermanentlyDeleteIngredient,
       },
     };
 
@@ -105,7 +116,10 @@ export default function AdminTrashPage() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSearchParams({ tab: tab.id });
+              }}
               className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition ${
                 activeTab === tab.id
                   ? "text-amber-800 border-amber-700"

@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Coffee,
+  Package,
   FolderTree,
   ShoppingBag,
   Armchair,
@@ -82,6 +83,11 @@ export default function AdminLayout({ children, title = "Quản Trị Hệ Thố
       to: "/admin/products",
       label: "Sản Phẩm",
       icon: Coffee,
+    },
+    {
+      to: "/admin/ingredients",
+      label: "Nguyên Liệu",
+      icon: Package,
     },
     {
       to: "/admin/categories",

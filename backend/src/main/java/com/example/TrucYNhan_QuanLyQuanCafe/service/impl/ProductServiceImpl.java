@@ -50,49 +50,26 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product update(Long id, Product product) {
+    public Product update(Long id, ProductRequest request) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sản phẩm với id: " + id));
 
-        if (product.getName() != null) {
-            existingProduct.setName(product.getName());
+        if (!categoryRepository.existsById(request.categoryId())) {
+            throw new BadRequestException("Danh mục không tồn tại với id: " + request.categoryId());
         }
-        if (product.getAlias() != null) {
-            existingProduct.setAlias(product.getAlias());
-        }
-        if (product.getCategory() != null) {
-            if (product.getCategory().getId() != null && !categoryRepository.existsById(product.getCategory().getId())) {
-                throw new BadRequestException("Danh mục không tồn tại với id: " + product.getCategory().getId());
-            }
-            existingProduct.setCategory(product.getCategory());
-        }
-        if (product.getSummary() != null) {
-            existingProduct.setSummary(product.getSummary());
-        }
-        if (product.getDetail() != null) {
-            existingProduct.setDetail(product.getDetail());
-        }
-        if (product.getPrice() != null) {
-            existingProduct.setPrice(product.getPrice());
-        }
-        if (product.getSalePrice() != null) {
-            existingProduct.setSalePrice(product.getSalePrice());
-        }
-        if (product.getQuantity() != null) {
-            existingProduct.setQuantity(product.getQuantity());
-        }
-        if (product.getUnit() != null) {
-            existingProduct.setUnit(product.getUnit());
-        }
-        if (product.getImage() != null) {
-            existingProduct.setImage(product.getImage());
-        }
-        if (product.getTag() != null) {
-            existingProduct.setTag(product.getTag());
-        }
-        if (product.getStatus() != null) {
-            existingProduct.setStatus(product.getStatus());
-        }
+
+        Product updated = productMapper.toEntity(request);
+        existingProduct.setName(updated.getName());
+        existingProduct.setCategory(updated.getCategory());
+        existingProduct.setSummary(updated.getSummary());
+        existingProduct.setDetail(updated.getDetail());
+        existingProduct.setPrice(updated.getPrice());
+        existingProduct.setSalePrice(updated.getSalePrice());
+        existingProduct.setQuantity(updated.getQuantity());
+        existingProduct.setUnit(updated.getUnit());
+        existingProduct.setImage(updated.getImage());
+        existingProduct.setTag(updated.getTag());
+        existingProduct.setStatus(updated.getStatus());
 
         return productRepository.save(existingProduct);
     }

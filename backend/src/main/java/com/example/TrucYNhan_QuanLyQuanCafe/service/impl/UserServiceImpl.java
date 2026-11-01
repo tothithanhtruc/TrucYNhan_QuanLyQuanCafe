@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -42,7 +44,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(request.username());
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRole("USER");
+        user.setRole("CUSTOMER");
         user.setFullName(request.fullName());
         user.setEmail(request.email());
         user.setPhone(request.phone());
@@ -57,8 +59,19 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User createUser(User user) {
+        validateRole(user.getRole());
+        if (user.getUsername() == null || user.getUsername().isBlank()) {
+            throw new IllegalArgumentException("Tên đăng nhập không được để trống");
+        }
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Mật khẩu không được để trống");
+        }
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại: " + user.getUsername());
+        }
         LocalDateTime now = LocalDateTime.now();
         user.setId(null);
+        user.setRole(normalizeRole(user.getRole()));
         if (user.getPassword() != null && !user.getPassword().startsWith("$2a$") && !user.getPassword().startsWith("$2b$")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
@@ -71,19 +84,40 @@ public class UserServiceImpl implements UserService {
     public User updateUser(Long id, User user) {
         User existing = getUserById(id);
 
-        existing.setUsername(user.getUsername());
-        existing.setPassword(user.getPassword());
+        if (user.getUsername() != null && !user.getUsername().isBlank()
+                && !user.getUsername().equals(existing.getUsername())
+                && userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại: " + user.getUsername());
+        }
+        if (user.getUsername() != null && !user.getUsername().isBlank()) {
+            existing.setUsername(user.getUsername());
+        }
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            existing.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         existing.setFullName(user.getFullName());
         existing.setEmail(user.getEmail());
         existing.setPhone(user.getPhone());
         existing.setAddress(user.getAddress());
         existing.setGender(user.getGender());
-        existing.setRole(user.getRole());
+        validateRole(user.getRole());
+        existing.setRole(normalizeRole(user.getRole()));
         existing.setImage(user.getImage());
         existing.setStatus(user.getStatus());
         existing.setUpdatedAt(LocalDateTime.now());
 
         return userRepository.save(existing);
+    }
+
+    private void validateRole(String role) {
+        if (role == null || !Set.of("ADMIN", "STAFF", "CUSTOMER", "USER").contains(role.trim().toUpperCase(Locale.ROOT))) {
+            throw new IllegalArgumentException("Vai trò không hợp lệ");
+        }
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role.trim().toUpperCase(Locale.ROOT);
+        return "USER".equals(normalized) ? "CUSTOMER" : normalized;
     }
 
     // @Override
