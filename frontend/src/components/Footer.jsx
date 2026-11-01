@@ -53,7 +53,7 @@ export default function Footer() {
                 <Link to="/contact" className="hover:text-white transition-colors">Liên hệ &amp; Hỗ trợ</Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">Chính sách bảo mật</a>
+                <Link to="/bao-mat" className="hover:text-white transition-colors">Chính sách bảo mật</Link>
               </li>
             </ul>
           </div>

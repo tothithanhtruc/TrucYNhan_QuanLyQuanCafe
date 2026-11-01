@@ -46,6 +46,7 @@ export const adminGetUsers = () => api.get("/users");
 export const adminCreateUser = (data) => api.post("/users", data);
 export const adminUpdateUser = (id, data) => api.put(`/users/${id}`, data);
 export const adminGetUserById = (id) => api.get(`/users/${id}`);
+export const adminDeleteUser = (id) => api.put(`/users/${id}/soft-delete`);
 
 // Posts API
 export const adminGetPosts = () => api.get("/posts");

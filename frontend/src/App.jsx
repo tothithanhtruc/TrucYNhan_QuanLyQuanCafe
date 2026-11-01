@@ -16,6 +16,7 @@ import CheckoutPage from "./pages/(shop)/CheckoutPage";
 import ProfilePage from "./pages/(shop)/ProfilePage";
 import VNPayReturnPage from "./pages/(shop)/VNPayReturnPage";
 import VNPayGatewayPage from "./pages/(shop)/VNPayGatewayPage";
+import SecurityPage from "./pages/(shop)/SecurityPage"; // chính sách bảo mật
 
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -41,9 +42,7 @@ export default function App() {
         <Route path="/shop/:id" element={<ProductDetailPage />} />
         <Route path="/products" element={<ShopProductsPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
-        <Route
-          path="/cart"
-          element={<ProtectedRoute><CartPage /></ProtectedRoute>}
+        <Route path="/cart"element={<ProtectedRoute><CartPage /></ProtectedRoute>}
         />
         <Route
           path="/checkout"
@@ -69,6 +68,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/inbox" element={<ContactInboxPage />} />
+        {/* //bảo mật và quyền riêng tư tĩnh */}
+        <Route path="/bao-mat" element={<SecurityPage />} />
         {/* Quản trị (Admin) */}
 
         <Route

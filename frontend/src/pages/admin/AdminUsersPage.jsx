@@ -6,7 +6,9 @@ import {
   Search,
   ShieldCheck,
   UserCheck,
+  Eye,
   Edit2,
+  Trash2,
   RefreshCw,
   Check,
   X,
@@ -18,6 +20,7 @@ import {
   adminGetUsers,
   adminCreateUser,
   adminUpdateUser,
+  adminDeleteUser,
 } from "../../services/adminApi";
 import Pagination from "../../components/Pagination";
 
@@ -33,6 +36,9 @@ export default function AdminUsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [viewingUser, setViewingUser] = useState(null);
 
   // Form State
   const initialFormState = {
@@ -95,6 +101,26 @@ export default function AdminUsersPage() {
     });
     setFormError("");
     setIsModalOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteConfirmUser) return;
+
+    setDeleting(true);
+    try {
+      await adminDeleteUser(deleteConfirmUser.id);
+      showToast("Xóa người dùng thành công!");
+      setDeleteConfirmUser(null);
+      await fetchUsers();
+    } catch (err) {
+      console.error("Lỗi khi xóa người dùng:", err);
+      showToast(
+        err.response?.data?.message || "Không thể xóa người dùng",
+        "error",
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -347,13 +373,29 @@ export default function AdminUsersPage() {
                       </td>
 
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleOpenEditModal(u)}
-                          title="Sửa thông tin"
-                          className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => setViewingUser(u)}
+                            title="Xem chi tiết người dùng"
+                            className="p-1.5 text-stone-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditModal(u)}
+                            title="Sửa thông tin"
+                            className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmUser(u)}
+                            title="Xóa người dùng"
+                            className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -526,6 +568,121 @@ export default function AdminUsersPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {viewingUser && (
+          <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200">
+              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+                <div>
+                  <h3 className="text-lg font-bold text-stone-900">
+                    Chi Tiết Người Dùng
+                  </h3>
+                  <p className="text-xs text-stone-500">Mã người dùng: {viewingUser.id}</p>
+                </div>
+                <button
+                  onClick={() => setViewingUser(null)}
+                  title="Đóng"
+                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mt-5 flex items-center gap-4">
+                {viewingUser.image ? (
+                  <img
+                    src={viewingUser.image}
+                    alt={viewingUser.fullName || viewingUser.username}
+                    className="h-16 w-16 rounded-full border border-stone-200 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-xl font-bold text-amber-900">
+                    {(viewingUser.fullName || viewingUser.username || "U")[0].toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <h4 className="text-lg font-bold text-stone-900">
+                    {viewingUser.fullName || viewingUser.username}
+                  </h4>
+                  <p className="text-sm text-stone-500">@{viewingUser.username}</p>
+                </div>
+              </div>
+              <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Email</dt>
+                  <dd className="mt-1 break-words text-stone-700">{viewingUser.email || "Chưa cung cấp"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Số điện thoại</dt>
+                  <dd className="mt-1 text-stone-700">{viewingUser.phone || "Chưa cung cấp"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Vai trò</dt>
+                  <dd className="mt-1">{getRoleBadge(viewingUser.role)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Trạng thái</dt>
+                  <dd className="mt-1 text-stone-700">
+                    {viewingUser.status === 0 ? "Đã khóa" : "Hoạt động"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Giới tính</dt>
+                  <dd className="mt-1 text-stone-700">{viewingUser.gender || "Chưa cập nhật"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Ngày tạo</dt>
+                  <dd className="mt-1 text-stone-700">
+                    {viewingUser.createdAt
+                      ? new Date(viewingUser.createdAt).toLocaleString("vi-VN")
+                      : "Không có thông tin"}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Địa chỉ</dt>
+                  <dd className="mt-1 whitespace-pre-wrap text-stone-700">
+                    {viewingUser.address || "Chưa cung cấp"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        )}
+
+        {deleteConfirmUser && (
+          <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 mx-auto flex items-center justify-center mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900">
+                Xóa người dùng?
+              </h3>
+              <p className="text-sm text-stone-500 mt-2">
+                Tài khoản{" "}
+                <span className="font-semibold text-stone-700">
+                  {deleteConfirmUser.fullName || deleteConfirmUser.username}
+                </span>{" "}
+                sẽ được chuyển vào thùng rác.
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setDeleteConfirmUser(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-xs transition disabled:opacity-50"
+                >
+                  {deleting ? "Đang xóa..." : "Xác nhận xóa"}
+                </button>
+              </div>
             </div>
           </div>
         )}

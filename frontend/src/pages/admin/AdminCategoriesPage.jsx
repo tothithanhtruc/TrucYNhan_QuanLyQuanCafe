@@ -6,6 +6,7 @@ import {
   Plus,
   Search,
   Edit2,
+  Eye,
   Trash2,
   Check,
   X,
@@ -31,6 +32,7 @@ export default function AdminCategoriesPage() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [viewingCategory, setViewingCategory] = useState(null);
 
   // Form State
   const initialFormState = {
@@ -303,6 +305,13 @@ const paginatedCategories = filteredCategories.slice(
                       <td className="py-3 px-4 text-right">
                         <div className="inline-flex items-center gap-1">
                           <button
+                            onClick={() => setViewingCategory(c)}
+                            title="Xem chi tiết danh mục"
+                            className="p-1.5 text-stone-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleOpenEditModal(c)}
                             title="Sửa danh mục"
                             className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
@@ -479,6 +488,61 @@ const paginatedCategories = filteredCategories.slice(
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {viewingCategory && (
+          <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200">
+              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+                <div>
+                  <h3 className="text-lg font-bold text-stone-900">
+                    Chi Tiết Danh Mục
+                  </h3>
+                  <p className="text-xs text-stone-500">Mã danh mục: {viewingCategory.id}</p>
+                </div>
+                <button
+                  onClick={() => setViewingCategory(null)}
+                  title="Đóng"
+                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              {viewingCategory.image && (
+                <img
+                  src={viewingCategory.image}
+                  alt={viewingCategory.name}
+                  className="mt-4 h-44 w-full rounded-2xl border border-stone-200 object-cover"
+                />
+              )}
+              <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Tên danh mục</dt>
+                  <dd className="mt-1 font-bold text-stone-900">{viewingCategory.name}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Alias</dt>
+                  <dd className="mt-1 text-stone-700">{viewingCategory.alias || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Thứ tự</dt>
+                  <dd className="mt-1 text-stone-700">{viewingCategory.sortOrder ?? 1}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Trạng thái</dt>
+                  <dd className="mt-1 text-stone-700">
+                    {viewingCategory.status === 0 ? "Tạm ẩn" : "Đang hiển thị"}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Mô tả</dt>
+                  <dd className="mt-1 whitespace-pre-wrap text-stone-700">
+                    {viewingCategory.description || "Chưa có mô tả"}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </div>
         )}
