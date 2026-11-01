@@ -63,6 +63,7 @@ public class AppUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getStatus() == null || user.getStatus() != 0;
+        return (user.getStatus() == null || user.getStatus() != 0)
+                && user.getDeletedAt() == null;
     }
 }

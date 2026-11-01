@@ -16,4 +16,10 @@ public interface IngredientService {
     IngredientResponse update(Long id, IngredientRequest request);
 
     void delete(Long id);
+
+    List<IngredientResponse> getDeleted();
+
+    void restore(Long id);
+
+    void permanentlyDelete(Long id);
 }

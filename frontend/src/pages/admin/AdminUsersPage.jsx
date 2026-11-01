@@ -177,8 +177,10 @@ export default function AdminUsersPage() {
       (u.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.phone || "").includes(searchTerm);
 
-    const matchRole =
-      roleFilter === "all" || (u.role || "").toUpperCase() === roleFilter.toUpperCase();
+    const userRole = (u.role || "CUSTOMER").toUpperCase() === "USER"
+      ? "CUSTOMER"
+      : (u.role || "CUSTOMER").toUpperCase();
+    const matchRole = roleFilter === "all" || userRole === roleFilter.toUpperCase();
 
     return matchSearch && matchRole;
   });

@@ -66,4 +66,21 @@ public class IngredientController {
                 "message", "Xóa nguyên liệu thành công"
         ));
     }
+
+    @GetMapping("/trash")
+    public ResponseEntity<Map<String, Object>> getDeleted() {
+        return ResponseEntity.ok(Map.of("data", ingredientService.getDeleted()));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<Map<String, Object>> restore(@PathVariable Long id) {
+        ingredientService.restore(id);
+        return ResponseEntity.ok(Map.of("message", "Khôi phục nguyên liệu thành công"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Map<String, Object>> permanentlyDelete(@PathVariable Long id) {
+        ingredientService.permanentlyDelete(id);
+        return ResponseEntity.ok(Map.of("message", "Đã xóa vĩnh viễn nguyên liệu"));
+    }
 }

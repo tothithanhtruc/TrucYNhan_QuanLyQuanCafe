@@ -65,9 +65,9 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> update(
             @PathVariable Long id,
-            @RequestBody Product product) {
+            @Valid @RequestBody ProductRequest request) {
 
-        Product result = productService.update(id, product);
+        Product result = productService.update(id, request);
 
         return ResponseEntity.ok(Map.of(
                 "message", "Cập nhật sản phẩm thành công",

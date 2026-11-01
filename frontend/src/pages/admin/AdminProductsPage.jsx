@@ -173,9 +173,7 @@ export default function AdminProductsPage() {
 
     const payload = {
       name: formData.name.trim(),
-      category: {
-        id: Number(formData.categoryId),
-      },
+      categoryId: Number(formData.categoryId),
       price: Number(formData.price),
       salePrice: formData.salePrice ? Number(formData.salePrice) : null,
       quantity: Number(formData.quantity) || 0,

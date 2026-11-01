@@ -14,6 +14,14 @@ export const adminDeleteProduct = (id) => api.delete(`/products/${id}`);
 export const adminGetDeletedProducts = () => api.get("/products/trash");
 export const adminRestoreProduct = (id) => api.patch(`/products/${id}/restore`);
 export const adminPermanentlyDeleteProduct = (id) => api.delete(`/products/${id}/permanent`);
+// Ingredients API
+export const adminGetIngredients = () => api.get("/ingredients");
+export const adminCreateIngredient = (data) => api.post("/ingredients", data);
+export const adminUpdateIngredient = (id, data) => api.put(`/ingredients/${id}`, data);
+export const adminDeleteIngredient = (id) => api.delete(`/ingredients/${id}`);
+export const adminGetDeletedIngredients = () => api.get("/ingredients/trash");
+export const adminRestoreIngredient = (id) => api.patch(`/ingredients/${id}/restore`);
+export const adminPermanentlyDeleteIngredient = (id) => api.delete(`/ingredients/${id}/permanent`);
 
 // Categories API
 export const adminGetCategories = () => api.get("/categories");
