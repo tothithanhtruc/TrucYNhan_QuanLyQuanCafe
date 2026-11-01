@@ -37,6 +37,7 @@ export default function AdminContactsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const [selectedContact, setSelectedContact] = useState(null);
+  const [replyMode, setReplyMode] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
   const [replySaving, setReplySaving] = useState(false);
@@ -141,9 +142,10 @@ export default function AdminContactsPage() {
     setSelectedContact(null);
   };
 
-  const handleViewDetails = async (id) => {
+  const handleViewDetails = async (id, enableReply = false) => {
     setSelectedContact(null);
     setReplyMessage("");
+    setReplyMode(enableReply);
     setDetailLoading(true);
     try {
       const response = await getContactById(id);
@@ -331,19 +333,23 @@ export default function AdminContactsPage() {
                   <th className="py-3.5 px-4">Tiêu đề</th>
                   <th className="py-3.5 px-4">Nội dung</th>
                   <th className="py-3.5 px-4">Ngày gửi</th>
-                  <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                  <th className="py-3.5 px-4 text-center">Chi tiết</th>
+                  {!viewingTrash && (
+                    <th className="py-3.5 px-4 text-center">Phản hồi</th>
+                  )}
+                  <th className="py-3.5 px-4 text-right">Xóa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-stone-400">
+                    <td colSpan={viewingTrash ? 6 : 7} className="py-12 text-center text-stone-400">
                       Đang tải danh sách liên hệ...
                     </td>
                   </tr>
                 ) : filteredContacts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-stone-400">
+                    <td colSpan={viewingTrash ? 6 : 7} className="py-12 text-center text-stone-400">
                       {searchTerm
                         ? "Không tìm thấy liên hệ phù hợp"
                         : viewingTrash
@@ -355,11 +361,10 @@ export default function AdminContactsPage() {
                   paginatedContacts.map((contact) => (
                     <tr
                       key={contact.id}
-                      className={`transition ${
-                        !viewingTrash && isContactUnread(contact, "ADMIN")
+                      className={`transition ${!viewingTrash && isContactUnread(contact, "ADMIN")
                           ? "bg-amber-50/70 hover:bg-amber-50"
                           : "hover:bg-stone-50/80"
-                      }`}
+                        }`}
                     >
                       <td className="py-3 px-4">
                         <div className="font-bold text-stone-900">{contact.name}</div>
@@ -392,63 +397,70 @@ export default function AdminContactsPage() {
                       <td className="py-3 px-4 text-xs text-stone-500 whitespace-nowrap">
                         {formatDate(contact.createdAt)}
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1">
+
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleViewDetails(contact.id)}
+                          title="Xem chi tiết liên hệ"
+                          className="inline-flex items-center justify-center rounded-lg p-2 text-stone-500 transition hover:bg-amber-50 hover:text-amber-800"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
+
+                      {!viewingTrash && (
+                        <td className="py-3 px-4 text-center">
                           <button
                             type="button"
-                            onClick={() => handleViewDetails(contact.id)}
-                            title="Xem chi tiết liên hệ"
-                            className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
+                            onClick={() => handleViewDetails(contact.id, true)}
+                            title="Phản hồi khách hàng"
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-sky-600 transition hover:bg-sky-50 hover:text-sky-700"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Send className="h-4 w-4" />
                           </button>
-                          {!viewingTrash && (
+                        </td>
+                      )}
+
+                      <td className="py-3 px-4 text-right">
+                        {viewingTrash ? (
+                          <div className="inline-flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => handleViewDetails(contact.id)}
-                              title="Phản hồi khách hàng trên website"
-                              className="p-1.5 text-stone-500 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition"
+                              onClick={() => handleRestore(contact.id)}
+                              title="Khôi phục liên hệ"
+                              className="rounded-lg p-2 text-stone-500 hover:bg-emerald-50 hover:text-emerald-700"
                             >
-                              <Send className="w-4 h-4" />
+                              <RotateCcw className="h-4 w-4" />
                             </button>
-                          )}
-                          {viewingTrash ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => handleRestore(contact.id)}
-                                title="Khôi phục liên hệ"
-                                className="p-1.5 text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDeleteMode("permanent");
-                                  setDeleteConfirmId(contact.id);
-                                }}
-                                title="Xóa vĩnh viễn"
-                                className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
+
                             <button
                               type="button"
                               onClick={() => {
-                                setDeleteMode("soft");
+                                setDeleteMode("permanent");
                                 setDeleteConfirmId(contact.id);
                               }}
-                              title="Chuyển vào thùng rác"
-                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Xóa vĩnh viễn"
+                              className="rounded-lg p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteMode("soft");
+                              setDeleteConfirmId(contact.id);
+                            }}
+                            title="Chuyển vào thùng rác"
+                            className="rounded-lg p-2 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </td>
+
                     </tr>
                   ))
                 )}
@@ -467,11 +479,10 @@ export default function AdminContactsPage() {
 
       {notification && (
         <div
-          className={`fixed right-5 top-5 z-[70] rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${
-            notification.type === "error"
+          className={`fixed right-5 top-5 z-[70] rounded-xl px-4 py-3 text-sm font-semibold shadow-lg ${notification.type === "error"
               ? "bg-rose-50 text-rose-700 border border-rose-200"
               : "bg-emerald-50 text-emerald-700 border border-emerald-200"
-          }`}
+            }`}
           role="status"
         >
           {notification.message}
@@ -482,7 +493,7 @@ export default function AdminContactsPage() {
         <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-stone-200">
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-              <h2 className="text-lg font-bold text-stone-900">Chi Tiết Liên Hệ</h2>
+              <h2 className="text-lg font-bold text-stone-900">Phản hồi khách hàng</h2>
               <button
                 type="button"
                 onClick={() => setSelectedContact(null)}
@@ -575,11 +586,10 @@ export default function AdminContactsPage() {
                             className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
                           >
                             <div
-                              className={`max-w-[85%] rounded-2xl p-3 ${
-                                isAdmin
+                              className={`max-w-[85%] rounded-2xl p-3 ${isAdmin
                                   ? "rounded-tr-sm bg-amber-100"
                                   : "rounded-tl-sm bg-white shadow-sm"
-                              }`}
+                                }`}
                             >
                               <p className={`mb-1 text-xs font-semibold ${isAdmin ? "text-amber-900" : "text-stone-500"}`}>
                                 {isAdmin ? "Cửa hàng" : selectedContact.name} · {formatDate(message.createdAt)}
@@ -592,31 +602,35 @@ export default function AdminContactsPage() {
                         );
                       })}
                     </div>
-                    <label
-                      htmlFor="contact-reply"
-                      className="block text-xs font-bold uppercase tracking-wider text-stone-600"
-                    >
-                      Tin nhắn cho khách hàng
-                    </label>
-                    <textarea
-                      id="contact-reply"
-                      rows={3}
-                      value={replyMessage}
-                      onChange={(event) => setReplyMessage(event.target.value)}
-                      placeholder="Nhập tin nhắn..."
-                      className="w-full resize-y rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-800 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-                    />
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={handleSaveReply}
-                        disabled={!replyMessage.trim() || replySaving}
-                        className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Send className="w-4 h-4" />
-                        {replySaving ? "Đang gửi..." : "Gửi tin nhắn"}
-                      </button>
-                    </div>
+                    {replyMode && (
+                      <>
+                        <label
+                          htmlFor="contact-reply"
+                          className="block text-xs font-bold uppercase tracking-wider text-stone-600"
+                        >
+                          Tin nhắn cho khách hàng
+                        </label>
+                        <textarea
+                          id="contact-reply"
+                          rows={3}
+                          value={replyMessage}
+                          onChange={(event) => setReplyMessage(event.target.value)}
+                          placeholder="Nhập tin nhắn..."
+                          className="w-full resize-y rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-800 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleSaveReply}
+                            disabled={!replyMessage.trim() || replySaving}
+                            className="inline-flex items-center gap-2 rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Send className="w-4 h-4" />
+                            {replySaving ? "Đang gửi..." : "Gửi tin nhắn"}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
                 <div className="flex flex-wrap justify-end gap-2 pt-2">

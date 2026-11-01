@@ -7,6 +7,7 @@ import {
   Search,
   Filter,
   Edit2,
+  Eye,
   Trash2,
   Image as ImageIcon,
   Check,
@@ -38,6 +39,7 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [viewingProduct, setViewingProduct] = useState(null);
 
   // Form State
   const initialFormState = {
@@ -455,6 +457,13 @@ export default function AdminProductsPage() {
                         <td className="py-3 px-4 text-right">
                           <div className="inline-flex items-center gap-1">
                             <button
+                              onClick={() => setViewingProduct(p)}
+                              title="Xem chi tiết sản phẩm"
+                              className="p-1.5 text-stone-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => handleOpenEditModal(p)}
                               title="Sửa món"
                               className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
@@ -733,6 +742,85 @@ export default function AdminProductsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {viewingProduct && (
+          <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-stone-200 my-8">
+              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+                <div>
+                  <h3 className="text-lg font-bold text-stone-900">
+                    Chi Tiết Sản Phẩm
+                  </h3>
+                  <p className="text-xs text-stone-500">Mã sản phẩm: {viewingProduct.id}</p>
+                </div>
+                <button
+                  onClick={() => setViewingProduct(null)}
+                  title="Đóng"
+                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                <img
+                  src={resolveProductImage(viewingProduct.image, viewingProduct.id)}
+                  alt={viewingProduct.name}
+                  className="h-48 w-full sm:w-48 shrink-0 rounded-2xl border border-stone-200 bg-stone-100 object-cover"
+                />
+                <div className="min-w-0">
+                  <h4 className="text-xl font-bold text-stone-900">{viewingProduct.name}</h4>
+                  <p className="mt-1 text-sm text-stone-500">
+                    {viewingProduct.category?.name ||
+                      categories.find((category) => String(category.id) === String(viewingProduct.categoryId || viewingProduct.category?.id))?.name ||
+                      "Chưa phân loại"}
+                  </p>
+                  <p className="mt-3 text-lg font-bold text-amber-800">
+                    {formatCurrency(
+                      viewingProduct.salePrice &&
+                        Number(viewingProduct.salePrice) < Number(viewingProduct.price)
+                        ? viewingProduct.salePrice
+                        : viewingProduct.price,
+                    )}
+                    {viewingProduct.salePrice &&
+                      Number(viewingProduct.salePrice) < Number(viewingProduct.price) && (
+                        <span className="ml-2 text-sm font-medium text-stone-400 line-through">
+                          {formatCurrency(viewingProduct.price)}
+                        </span>
+                      )}
+                  </p>
+                </div>
+              </div>
+              <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Tồn kho</dt>
+                  <dd className="mt-1 text-stone-700">{viewingProduct.quantity ?? 100} {viewingProduct.unit || "Ly"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Nhãn</dt>
+                  <dd className="mt-1 text-stone-700">{viewingProduct.tag || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Trạng thái</dt>
+                  <dd className="mt-1 text-stone-700">
+                    {viewingProduct.status === 0 ? "Tạm ẩn" : "Đang bán"}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Mô tả ngắn</dt>
+                  <dd className="mt-1 whitespace-pre-wrap text-stone-700">
+                    {viewingProduct.summary || viewingProduct.description || "Chưa có mô tả"}
+                  </dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase text-stone-500">Chi tiết</dt>
+                  <dd className="mt-1 whitespace-pre-wrap text-stone-700">
+                    {viewingProduct.detail || "Chưa có thông tin chi tiết"}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </div>
         )}
