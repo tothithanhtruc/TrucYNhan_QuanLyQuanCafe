@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import { checkout } from "../../services/orderApi";
+import { getPromotionByCode } from "../../services/adminApi";
 import { removeFromCart } from "../../services/cartApi";
 import { createVNPayPaymentUrl, simulateVNPayPayment } from "../../services/paymentApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
@@ -19,6 +20,10 @@ import {
   Copy,
   Check,
   ShieldCheck,
+  Ticket,
+  X,
+  AlertCircle,
+  Percent,
 } from "lucide-react";
 
 const BANK_OPTIONS = [
@@ -73,29 +78,14 @@ export default function CheckoutPage() {
   const [vnpayCardHolder, setVnpayCardHolder] = useState("NGUYEN VAN A");
   const [vnpayIssueDate, setVnpayIssueDate] = useState("07/15");
   const [vnpayOtp, setVnpayOtp] = useState("123456");
-
-  const fillSampleCard = () => {
-    setVnpayBankCode("NCB");
-    setVnpayCardNumber("9704198526191432198");
-    setVnpayCardHolder("NGUYEN VAN A");
-    setVnpayIssueDate("07/15");
-    setVnpayOtp("123456");
-  };
-
-  const clearCardInfo = () => {
-    setVnpayCardNumber("");
-    setVnpayCardHolder("");
-    setVnpayIssueDate("");
-    setVnpayOtp("");
-  };
-  const [copiedField, setCopiedField] = useState("");
   const [note, setNote] = useState("");
 
-  const copyToClipboard = (text, fieldName) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    setTimeout(() => setCopiedField(""), 2000);
-  };
+  /* ─── Khuyến mãi / Voucher ─── */
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [appliedPromotion, setAppliedPromotion] = useState(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
+  const [promoSuccess, setPromoSuccess] = useState("");
 
   useEffect(() => {
     // Đọc danh sách sản phẩm đã chọn từ sessionStorage
@@ -146,13 +136,88 @@ export default function CheckoutPage() {
     };
   }, [navigate]);
 
-  /* ─── Tính tổng ─── */
+  /* ─── Tính tổng & Giảm giá ─── */
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
+
+  let discountAmount = 0;
+  if (appliedPromotion) {
+    if (appliedPromotion.discountType === "PERCENT") {
+      discountAmount = Math.round((subtotal * appliedPromotion.discountValue) / 100);
+    } else {
+      discountAmount = Number(appliedPromotion.discountValue) || 0;
+    }
+    if (discountAmount > subtotal) {
+      discountAmount = subtotal;
+    }
+  }
+
   const shippingFee = 0;
-  const total = subtotal + shippingFee;
+  const total = Math.max(0, subtotal - discountAmount + shippingFee);
+
+  /* ─── Xử lý áp dụng mã khuyến mãi ─── */
+  const handleApplyPromo = async (e) => {
+    if (e) e.preventDefault();
+    if (!promoCodeInput.trim()) {
+      setPromoError("Vui lòng nhập mã khuyến mãi");
+      return;
+    }
+
+    setPromoLoading(true);
+    setPromoError("");
+    setPromoSuccess("");
+
+    try {
+      const res = await getPromotionByCode(promoCodeInput.trim().toUpperCase());
+      const promo = res.data?.data;
+      if (!promo) {
+        setPromoError("Mã khuyến mãi không tồn tại.");
+        return;
+      }
+      if (promo.status !== 1) {
+        setPromoError("Mã khuyến mãi hiện đang tạm dừng áp dụng.");
+        return;
+      }
+      const now = new Date();
+      if (promo.startDate && new Date(promo.startDate) > now) {
+        setPromoError("Mã khuyến mãi chưa tới thời gian áp dụng.");
+        return;
+      }
+      if (promo.endDate && new Date(promo.endDate) < now) {
+        setPromoError("Mã khuyến mãi đã hết hạn sử dụng.");
+        return;
+      }
+      if (promo.quantity !== null && promo.quantity !== undefined && promo.quantity <= 0) {
+        setPromoError("Mã khuyến mãi đã hết lượt sử dụng.");
+        return;
+      }
+      if (promo.minOrderAmount && subtotal < Number(promo.minOrderAmount)) {
+        setPromoError(
+          `Đơn hàng cần đạt tối thiểu ${formatCurrency(promo.minOrderAmount)} để áp dụng mã này.`
+        );
+        return;
+      }
+
+      setAppliedPromotion(promo);
+      setPromoSuccess(`Áp dụng mã "${promo.code}" thành công!`);
+      setPromoError("");
+    } catch (err) {
+      setPromoError(
+        err.response?.data?.message || "Mã khuyến mãi không hợp lệ hoặc đã hết hạn."
+      );
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromotion(null);
+    setPromoCodeInput("");
+    setPromoError("");
+    setPromoSuccess("");
+  };
 
   /* ─── Xử lý đặt hàng ─── */
   const handleSubmit = async (e) => {
@@ -180,11 +245,13 @@ export default function CheckoutPage() {
         deliveryAddress: deliveryAddress.trim(),
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
+        promotionCode: appliedPromotion ? appliedPromotion.code : null,
         note:
           [
             `Tên: ${customerName.trim()}`,
             `SĐT: ${customerPhone.trim()}`,
             `Thanh toán: ${paymentLabel}`,
+            appliedPromotion ? `Voucher: ${appliedPromotion.code}` : "",
             note.trim() || "",
           ]
             .filter(Boolean)
@@ -242,19 +309,7 @@ export default function CheckoutPage() {
         <main className="mx-auto max-w-2xl px-4 py-16">
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-              <svg
-                className="h-8 w-8 text-emerald-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+              <Check className="h-8 w-8 text-emerald-600" />
             </div>
             <h2 className="mb-2 text-2xl font-bold text-emerald-900">
               Đặt hàng thành công!
@@ -263,9 +318,14 @@ export default function CheckoutPage() {
               Mã đơn hàng:{" "}
               <strong className="text-emerald-800">{order.orderCode}</strong>
             </p>
+            {order.promotionCode && (
+              <p className="mb-1 text-sm text-amber-800 font-medium">
+                Đã áp dụng mã khuyến mãi: <strong>{order.promotionCode}</strong> (Tiết kiệm {formatCurrency(order.discountAmount)})
+              </p>
+            )}
             <p className="mb-6 text-stone-700">
-              Đơn hàng đang chờ cửa hàng xác nhận. Tổng tiền:{" "}
-              <strong>{formatCurrency(order.totalAmount)}</strong>
+              Đơn hàng đang chờ cửa hàng xác nhận. Tổng thanh toán:{" "}
+              <strong className="text-stone-900">{formatCurrency(order.totalAmount)}</strong>
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
@@ -473,14 +533,14 @@ export default function CheckoutPage() {
               </section>
             </div>
 
-            {/* ─── Cột phải: Đơn hàng ─── */}
+            {/* ─── Cột phải: Đơn hàng & Voucher ─── */}
             <div className="h-fit space-y-5 rounded-2xl border border-stone-200 bg-white p-6 lg:sticky lg:top-24">
               <h2 className="text-lg font-bold text-stone-900">
                 Đơn hàng ({items.length} sản phẩm)
               </h2>
 
               {/* Danh sách sản phẩm */}
-              <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
+              <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
                 {items.map((item) => (
                   <div
                     key={item.id}
@@ -508,12 +568,96 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              {/* Tổng */}
+              {/* Ô nhập mã khuyến mãi / Voucher */}
+              <div className="border-t border-stone-200 pt-4">
+                <label className="mb-2 block text-xs font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Ticket className="w-4 h-4 text-amber-700" />
+                  Mã khuyến mãi / Voucher
+                </label>
+
+                {!appliedPromotion ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập mã ưu đãi..."
+                        value={promoCodeInput}
+                        onChange={(e) =>
+                          setPromoCodeInput(e.target.value.toUpperCase().replace(/\s+/g, ""))
+                        }
+                        className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm uppercase font-mono font-bold tracking-wider placeholder:font-normal placeholder:tracking-normal focus:border-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-800/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyPromo}
+                        disabled={promoLoading || !promoCodeInput.trim()}
+                        className="rounded-lg bg-stone-800 px-4 py-2 text-sm font-bold text-white hover:bg-stone-900 disabled:cursor-not-allowed disabled:opacity-50 transition"
+                      >
+                        {promoLoading ? (
+                          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        ) : (
+                          "Áp dụng"
+                        )}
+                      </button>
+                    </div>
+                    {promoError && (
+                      <p className="text-xs text-rose-600 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{promoError}</span>
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <Ticket className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-emerald-900 text-sm">
+                            {appliedPromotion.code}
+                          </span>
+                          <span className="text-[11px] font-bold bg-emerald-200/80 text-emerald-800 px-1.5 py-0.5 rounded">
+                            {appliedPromotion.discountType === "PERCENT"
+                              ? `Giảm ${appliedPromotion.discountValue}%`
+                              : `Giảm ${Number(appliedPromotion.discountValue).toLocaleString("vi-VN")}đ`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-emerald-700 mt-0.5">
+                          {appliedPromotion.name}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      title="Gỡ mã khuyến mãi"
+                      className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Tổng & Giảm giá */}
               <div className="space-y-3 border-t border-stone-200 pt-4 text-sm">
                 <div className="flex justify-between text-stone-600">
                   <span>Tạm tính</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
+
+                {appliedPromotion && discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-700 font-medium">
+                    <span className="flex items-center gap-1">
+                      <Ticket className="w-3.5 h-3.5" />
+                      Giảm giá voucher
+                    </span>
+                    <span>-{formatCurrency(discountAmount)}</span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-stone-600">
                   <span className="flex items-center gap-1.5">
                     <Truck className="h-4 w-4 text-emerald-600" />
@@ -533,7 +677,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={submitting || items.length === 0}
-                className="w-full rounded-lg bg-amber-800 px-5 py-3.5 font-bold text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-lg bg-amber-800 px-5 py-3.5 font-bold text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-50 transition shadow-md shadow-amber-800/20"
               >
                 {submitting ? (
                   <span className="flex items-center justify-center gap-2">

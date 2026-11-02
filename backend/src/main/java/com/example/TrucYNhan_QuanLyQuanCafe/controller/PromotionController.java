@@ -30,6 +30,15 @@ public class PromotionController {
         ));
     }
 
+    @GetMapping("/trash")
+    public ResponseEntity<Map<String, Object>> getDeleted() {
+        List<PromotionResponse> promotions = promotionService.getDeleted();
+        return ResponseEntity.ok(Map.of(
+                "message", "Lấy danh sách khuyến mãi đã xóa thành công",
+                "data", promotions
+        ));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id) {
         PromotionResponse promotion = promotionService.getById(id);
@@ -73,6 +82,22 @@ public class PromotionController {
         promotionService.delete(id);
         return ResponseEntity.ok(Map.of(
                 "message", "Xóa khuyến mãi thành công"
+        ));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<Map<String, Object>> restore(@PathVariable Long id) {
+        promotionService.restore(id);
+        return ResponseEntity.ok(Map.of(
+                "message", "Khôi phục khuyến mãi thành công"
+        ));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<Map<String, Object>> permanentlyDelete(@PathVariable Long id) {
+        promotionService.permanentlyDelete(id);
+        return ResponseEntity.ok(Map.of(
+                "message", "Đã xóa vĩnh viễn khuyến mãi"
         ));
     }
 }

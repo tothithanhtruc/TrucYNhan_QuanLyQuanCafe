@@ -80,6 +80,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/banners", "/api/banners/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/uploads/image").authenticated()
+                // Xem danh sách khuyến mãi không cần auth, xem thùng rác chỉ ADMIN
+                .requestMatchers(HttpMethod.GET, "/api/promotions/trash").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/promotions", "/api/promotions/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/promotions", "/api/promotions/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/promotions/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/promotions/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/promotions/**").hasRole("ADMIN")
                 // Quản lý nguyên liệu chỉ dành cho ADMIN
                 .requestMatchers("/api/ingredients/**").hasRole("ADMIN")
                 // Gửi liên hệ không cần auth
