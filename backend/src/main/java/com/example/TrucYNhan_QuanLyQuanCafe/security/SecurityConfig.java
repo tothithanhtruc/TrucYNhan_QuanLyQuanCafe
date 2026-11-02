@@ -29,7 +29,7 @@ public class SecurityConfig {
     private String securityType;
 
     public SecurityConfig(DatabaseUserDetailsService userDetailsService,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
@@ -58,9 +58,17 @@ public class SecurityConfig {
 
         // Cấu hình phân quyền API
         http.authorizeHttpRequests(auth -> auth
-                // Đăng ký tài khoản không cần auth (B02)
-                .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
-                // Đăng nhập JWT không cần auth (J02)
+                // // Đăng ký tài khoản không cần auth (B02)
+                // .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
+                // // Đăng nhập JWT không cần auth (J02)
+                // .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Đăng ký tài khoản không cần auth
+                .requestMatchers(HttpMethod.POST,
+                        "/api/users/register",
+                        "/api/auth/register")
+                .permitAll()
+
+                // Đăng nhập JWT không cần auth
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders/checkout").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/payment/vnpay/create").authenticated()
@@ -70,7 +78,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/orders/my-orders").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/orders").hasRole("ADMIN")
-                // Xem danh sách sản phẩm không cần auth 
+                // Xem danh sách sản phẩm không cần auth
                 .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
                 // Xem danh sách danh mục không cần auth
                 .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
@@ -92,7 +100,8 @@ public class SecurityConfig {
                 // Gửi liên hệ không cần auth
                 .requestMatchers(HttpMethod.POST, "/api/contacts/*/messages").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/contacts").permitAll()
-                // Hộp thư dành cho tài khoản đăng nhập; danh sách/quản lý liên hệ chỉ dành cho ADMIN
+                // Hộp thư dành cho tài khoản đăng nhập; danh sách/quản lý liên hệ chỉ dành cho
+                // ADMIN
                 .requestMatchers(HttpMethod.GET, "/api/contacts/inbox").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/contacts", "/api/contacts/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/contacts/*/reply").hasRole("ADMIN")
@@ -100,36 +109,43 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/contacts/**").hasRole("ADMIN")
                 // Logout endpoint
                 .requestMatchers(HttpMethod.POST, "/api/users/logout", "/api/auth/logout").permitAll()
-                // Chỉ ADMIN mới có quyền tạo danh mục 
+                // Chỉ ADMIN mới có quyền tạo danh mục
                 .requestMatchers(HttpMethod.POST, "/api/categories", "/api/categories/**").hasRole("ADMIN")
-                // Chỉ ADMIN mới có quyền tạo sản phẩm 
+                // Chỉ ADMIN mới có quyền tạo sản phẩm
                 .requestMatchers(HttpMethod.POST, "/api/products", "/api/products/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/posts", "/api/posts/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/topics", "/api/topics/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**", "/api/posts/**", "/api/topics/**", "/api/tables/**", "/api/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**", "/api/categories/**", "/api/posts/**",
+                        "/api/topics/**", "/api/tables/**", "/api/users/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/products/**", "/api/categories/**", "/api/posts/**",
+                        "/api/topics/**", "/api/tables/**", "/api/users/**")
+                .hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**", "/api/categories/**", "/api/posts/**",
+                        "/api/topics/**", "/api/tables/**", "/api/users/**")
+                .hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/api/orders", "/api/orders/**", "/api/tables", "/api/tables/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/orders", "/api/orders/**", "/api/tables", "/api/tables/**")
+                .hasRole("ADMIN")
                 // Mọi request còn lại yêu cầu xác thực
-                .anyRequest().authenticated()
-        );
+                .anyRequest().authenticated());
 
         // Gắn AuthenticationProvider
         http.authenticationProvider(authenticationProvider());
 
         if ("jwt".equalsIgnoreCase(securityType)) {
-            // Tắt HTTP Basic, form login, đặt session là STATELESS, thêm JwtAuthenticationFilter
+            // Tắt HTTP Basic, form login, đặt session là STATELESS, thêm
+            // JwtAuthenticationFilter
             http.httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                    .formLogin(AbstractHttpConfigurer::disable)
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         } else {
-            //Bật HTTP Basic, không khai báo STATELESS (dùng session mặc định)
+            // Bật HTTP Basic, không khai báo STATELESS (dùng session mặc định)
             http.httpBasic(Customizer.withDefaults())
-                .formLogin(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+                    .formLogin(AbstractHttpConfigurer::disable)
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
         }
 
         return http.build();
