@@ -142,6 +142,13 @@ export default function LoginPage() {
               Đăng ký
             </Link>
           </p>
+          <Link
+            to="/"
+            state={location.state}
+            className="font-bold text-amber-800 hover:text-amber-900"
+          >
+            Quay lại
+          </Link>
         </div>
       </div>
     </main>
