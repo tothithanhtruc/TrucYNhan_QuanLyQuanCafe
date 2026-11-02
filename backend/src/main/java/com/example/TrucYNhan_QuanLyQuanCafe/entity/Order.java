@@ -39,6 +39,10 @@ public class Order {
     private BigDecimal totalAmount = BigDecimal.ZERO;
     @Column(name = "shipping_fee", precision = 12, scale = 2)
     private BigDecimal shippingFee = BigDecimal.ZERO;
+    @Column(name = "discount_amount", precision = 12, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+    @Column(name = "promotion_code", length = 50)
+    private String promotionCode;
     @Column(name = "delivery_address", length = 255)
     private String deliveryAddress;
     @Column(length = 30)
@@ -82,6 +86,10 @@ public class Order {
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
     public BigDecimal getShippingFee() { return shippingFee; }
     public void setShippingFee(BigDecimal shippingFee) { this.shippingFee = shippingFee; }
+    public BigDecimal getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
+    public String getPromotionCode() { return promotionCode; }
+    public void setPromotionCode(String promotionCode) { this.promotionCode = promotionCode; }
     public String getDeliveryAddress() { return deliveryAddress; }
     public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
     public String getStatus() { return status; }

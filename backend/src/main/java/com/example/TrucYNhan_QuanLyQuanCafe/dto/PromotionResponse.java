@@ -16,5 +16,6 @@ public record PromotionResponse(
         Integer quantity,
         Integer status,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        LocalDateTime deletedAt
 ) {}

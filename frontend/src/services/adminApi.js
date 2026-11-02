@@ -65,3 +65,14 @@ export const adminGetDeletedPosts = () => api.get("/posts/trash");
 export const adminRestorePost = (id) => api.put(`/posts/${id}/restore`);
 export const adminPermanentlyDeletePost = (id) => api.delete(`/posts/${id}/permanent`);
 export const adminGetTopics = () => api.get("/topics");
+
+// Promotions API
+export const adminGetPromotions = () => api.get("/promotions");
+export const adminGetPromotionById = (id) => api.get(`/promotions/${id}`);
+export const adminCreatePromotion = (data) => api.post("/promotions", data);
+export const adminUpdatePromotion = (id, data) => api.put(`/promotions/${id}`, data);
+export const adminDeletePromotion = (id) => api.delete(`/promotions/${id}`);
+export const adminGetDeletedPromotions = () => api.get("/promotions/trash");
+export const adminRestorePromotion = (id) => api.patch(`/promotions/${id}/restore`);
+export const adminPermanentlyDeletePromotion = (id) => api.delete(`/promotions/${id}/permanent`);
+export const getPromotionByCode = (code) => api.get(`/promotions/code/${code}`);

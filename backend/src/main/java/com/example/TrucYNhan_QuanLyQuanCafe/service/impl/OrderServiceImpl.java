@@ -7,6 +7,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.dto.CheckoutRequest;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Order;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.OrderItem;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Product;
+import com.example.TrucYNhan_QuanLyQuanCafe.entity.Promotion;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.User;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.Employee;
 import com.example.TrucYNhan_QuanLyQuanCafe.entity.TableEntity;
@@ -15,6 +16,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.exception.ResourceNotFoundException;
 import com.example.TrucYNhan_QuanLyQuanCafe.mapper.OrderMapper;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.OrderRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.ProductRepository;
+import com.example.TrucYNhan_QuanLyQuanCafe.repository.PromotionRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.UserRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.EmployeeRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.TableRepository;
@@ -27,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
@@ -36,6 +39,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final PromotionRepository promotionRepository;
     private final EmployeeRepository employeeRepository;
     private final TableRepository tableRepository;
     private final OrderMapper orderMapper;
@@ -43,12 +47,14 @@ public class OrderServiceImpl implements OrderService {
     public OrderServiceImpl(OrderRepository orderRepository,
                             UserRepository userRepository,
                             ProductRepository productRepository,
+                            PromotionRepository promotionRepository,
                             EmployeeRepository employeeRepository,
                             TableRepository tableRepository,
                             OrderMapper orderMapper) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
+        this.promotionRepository = promotionRepository;
         this.employeeRepository = employeeRepository;
         this.tableRepository = tableRepository;
         this.orderMapper = orderMapper;
@@ -104,6 +110,57 @@ public class OrderServiceImpl implements OrderService {
             total = total.add(getUnitPrice(product).multiply(BigDecimal.valueOf(quantity)));
         }
 
+        // Xử lý khuyến mãi nếu có mã
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        String appliedPromotionCode = null;
+        if (request.promotionCode() != null && !request.promotionCode().trim().isEmpty()) {
+            String promoCode = request.promotionCode().trim();
+            Promotion promotion = promotionRepository.findByCodeAndDeletedAtIsNull(promoCode)
+                    .orElseThrow(() -> new BadRequestException("Mã khuyến mãi \"" + promoCode + "\" không tồn tại"));
+
+            if (!Integer.valueOf(1).equals(promotion.getStatus())) {
+                throw new BadRequestException("Mã khuyến mãi \"" + promoCode + "\" hiện không khả dụng");
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            if (promotion.getStartDate() != null && now.isBefore(promotion.getStartDate())) {
+                throw new BadRequestException("Mã khuyến mãi \"" + promoCode + "\" chưa đến thời gian áp dụng");
+            }
+            if (promotion.getEndDate() != null && now.isAfter(promotion.getEndDate())) {
+                throw new BadRequestException("Mã khuyến mãi \"" + promoCode + "\" đã hết hạn sử dụng");
+            }
+            if (promotion.getQuantity() != null && promotion.getQuantity() <= 0) {
+                throw new BadRequestException("Mã khuyến mãi \"" + promoCode + "\" đã hết lượt sử dụng");
+            }
+            if (promotion.getMinOrderAmount() != null && total.compareTo(promotion.getMinOrderAmount()) < 0) {
+                throw new BadRequestException("Đơn hàng chưa đạt giá trị tối thiểu " + promotion.getMinOrderAmount() + "đ để áp dụng mã");
+            }
+
+            if ("PERCENT".equalsIgnoreCase(promotion.getDiscountType())) {
+                discountAmount = total.multiply(promotion.getDiscountValue())
+                        .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+            } else {
+                discountAmount = promotion.getDiscountValue();
+            }
+
+            if (discountAmount.compareTo(total) > 0) {
+                discountAmount = total;
+            }
+
+            appliedPromotionCode = promotion.getCode();
+
+            // Trừ số lượng lượt dùng khuyến mãi
+            if (promotion.getQuantity() != null && promotion.getQuantity() > 0) {
+                promotion.setQuantity(promotion.getQuantity() - 1);
+                promotionRepository.save(promotion);
+            }
+        }
+
+        BigDecimal finalTotal = total.subtract(discountAmount);
+        if (finalTotal.compareTo(BigDecimal.ZERO) < 0) {
+            finalTotal = BigDecimal.ZERO;
+        }
+
         Order order = new Order();
         order.setOrderCode("ORD-" + UUID.randomUUID().toString().replace("-", ""));
         order.setUser(user);
@@ -116,8 +173,10 @@ public class OrderServiceImpl implements OrderService {
                 : user.getPhone();
         order.setCustomerPhone(custPhone);
         order.setOrderType("ONLINE");
-        order.setTotalAmount(total);
+        order.setTotalAmount(finalTotal);
         order.setShippingFee(BigDecimal.ZERO);
+        order.setDiscountAmount(discountAmount);
+        order.setPromotionCode(appliedPromotionCode);
         order.setDeliveryAddress(request.deliveryAddress().trim());
         order.setStatus("PENDING");
         order.setNote(request.note());

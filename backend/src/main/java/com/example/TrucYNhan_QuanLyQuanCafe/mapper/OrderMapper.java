@@ -85,6 +85,8 @@ public class OrderMapper {
                 order.getOrderDate(),
                 order.getTotalAmount(),
                 order.getShippingFee(),
+                order.getDiscountAmount(),
+                order.getPromotionCode(),
                 order.getDeliveryAddress(),
                 order.getStatus(),
                 order.getNote(),

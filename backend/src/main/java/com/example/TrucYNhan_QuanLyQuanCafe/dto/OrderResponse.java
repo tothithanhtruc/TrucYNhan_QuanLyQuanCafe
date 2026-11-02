@@ -19,6 +19,8 @@ public record OrderResponse(
         LocalDateTime orderDate,
         BigDecimal totalAmount,
         BigDecimal shippingFee,
+        BigDecimal discountAmount,
+        String promotionCode,
         String deliveryAddress,
         String status,
         String note,

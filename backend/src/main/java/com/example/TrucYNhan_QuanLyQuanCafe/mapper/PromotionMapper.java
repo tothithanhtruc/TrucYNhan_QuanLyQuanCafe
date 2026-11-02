@@ -43,7 +43,8 @@ public class PromotionMapper {
                 promotion.getQuantity(),
                 promotion.getStatus(),
                 promotion.getCreatedAt(),
-                promotion.getUpdatedAt()
+                promotion.getUpdatedAt(),
+                promotion.getDeletedAt()
         );
     }
 }

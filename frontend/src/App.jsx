@@ -21,6 +21,7 @@ import SecurityPage from "./pages/(shop)/SecurityPage"; // chính sách bảo m�
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
 import AdminProductsPage from "./pages/admin/AdminProductsPage";
+import AdminPromotionsPage from "./pages/admin/AdminPromotionsPage";
 import AdminIngredientsPage from "./pages/admin/AdminIngredientsPage";
 import AdminCategoriesPage from "./pages/admin/AdminCategoriesPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
@@ -84,6 +85,10 @@ export default function App() {
         <Route
           path="/admin/products"
           element={<ProtectedRoute adminOnly><AdminProductsPage /></ProtectedRoute>}
+        />
+        <Route
+          path="/admin/promotions"
+          element={<ProtectedRoute adminOnly><AdminPromotionsPage /></ProtectedRoute>}
         />
         <Route
           path="/admin/ingredients"

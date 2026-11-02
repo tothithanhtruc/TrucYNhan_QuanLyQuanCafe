@@ -10,6 +10,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.service.PromotionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,7 +28,7 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional(readOnly = true)
     public List<PromotionResponse> getAll() {
-        return promotionRepository.findAll().stream()
+        return promotionRepository.findByDeletedAtIsNull().stream()
                 .map(promotionMapper::toResponse).toList();
     }
 
@@ -42,7 +43,7 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional(readOnly = true)
     public PromotionResponse getByCode(String code) {
-        return promotionRepository.findByCode(code)
+        return promotionRepository.findByCodeAndDeletedAtIsNull(code)
                 .map(promotionMapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khuyến mãi với mã: " + code));
     }
@@ -74,6 +75,29 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public void delete(Long id) {
+        Promotion existing = promotionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khuyến mãi với id: " + id));
+        existing.setDeletedAt(LocalDateTime.now());
+        promotionRepository.save(existing);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PromotionResponse> getDeleted() {
+        return promotionRepository.findByDeletedAtIsNotNull().stream()
+                .map(promotionMapper::toResponse).toList();
+    }
+
+    @Override
+    public void restore(Long id) {
+        Promotion existing = promotionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khuyến mãi với id: " + id));
+        existing.setDeletedAt(null);
+        promotionRepository.save(existing);
+    }
+
+    @Override
+    public void permanentlyDelete(Long id) {
         if (!promotionRepository.existsById(id)) {
             throw new ResourceNotFoundException("Không tìm thấy khuyến mãi với id: " + id);
         }

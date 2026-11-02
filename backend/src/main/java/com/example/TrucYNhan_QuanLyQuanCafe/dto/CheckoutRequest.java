@@ -23,6 +23,9 @@ public record CheckoutRequest(
 
         @NotEmpty(message = "Giỏ hàng chưa có sản phẩm")
         @Size(max = 100, message = "Giỏ hàng không được vượt quá 100 sản phẩm")
-        List<@Valid CheckoutItemRequest> items
+        List<@Valid CheckoutItemRequest> items,
+
+        @Size(max = 50, message = "Mã khuyến mãi không được vượt quá 50 ký tự")
+        String promotionCode
 ) {
 }

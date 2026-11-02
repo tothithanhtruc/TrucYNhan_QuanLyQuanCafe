@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Newspaper,
+  Ticket,
 } from "lucide-react";
 import { logout } from "../services/authApi";
 import { getContacts } from "../services/contactApi";
@@ -85,6 +86,11 @@ export default function AdminLayout({ children, title = "Quản Trị Hệ Thố
       icon: Coffee,
     },
     {
+      to: "/admin/promotions",
+      label: "Khuyến Mãi",
+      icon: Ticket,
+    },
+    {
       to: "/admin/ingredients",
       label: "Nguyên Liệu",
       icon: Package,
@@ -114,7 +120,8 @@ export default function AdminLayout({ children, title = "Quản Trị Hệ Thố
       label: "Liên Hệ",
       icon: MessageSquare,
     },
-    { to: "/admin/posts",
+    {
+      to: "/admin/posts",
       label: "Bài Viết",
       icon: Newspaper,
     },

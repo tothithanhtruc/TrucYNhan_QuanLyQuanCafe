@@ -16,10 +16,14 @@ import {
   adminGetDeletedIngredients,
   adminRestoreIngredient,
   adminPermanentlyDeleteIngredient,
+  adminGetDeletedPromotions,
+  adminRestorePromotion,
+  adminPermanentlyDeletePromotion,
 } from "../../services/adminApi";
 
 const tabs = [
   { id: "products", label: "Sản phẩm" },
+  { id: "promotions", label: "Khuyến mãi" },
   { id: "categories", label: "Danh mục" },
   { id: "orders", label: "Đơn hàng" },
   { id: "ingredients", label: "Nguyên liệu" },
@@ -37,6 +41,7 @@ export default function AdminTrashPage() {
     try {
       const loaders = {
         products: adminGetDeletedProducts,
+        promotions: adminGetDeletedPromotions,
         categories: adminGetDeletedCategories,
         orders: adminGetDeletedOrders,
         ingredients: adminGetDeletedIngredients,
@@ -60,6 +65,10 @@ export default function AdminTrashPage() {
       products: {
         restore: adminRestoreProduct,
         permanent: adminPermanentlyDeleteProduct,
+      },
+      promotions: {
+        restore: adminRestorePromotion,
+        permanent: adminPermanentlyDeletePromotion,
       },
       categories: {
         restore: adminRestoreCategory,
@@ -91,6 +100,7 @@ export default function AdminTrashPage() {
 
   const getLabel = (item) => {
     if (activeTab === "orders") return `Đơn #${item.orderCode || item.id}`;
+    if (activeTab === "promotions") return `[${item.code || "K/M"}] ${item.name || `Khuyến mãi #${item.id}`}`;
     return item.name || `Mục #${item.id}`;
   };
 
@@ -146,6 +156,12 @@ export default function AdminTrashPage() {
                     <p className="font-semibold text-stone-800">{getLabel(item)}</p>
                     {activeTab === "orders" && (
                       <p className="text-xs text-stone-500 mt-1">{item.customerName || (item.note?.match(/Tên:\s*([^|]+)/i)?.[1]?.trim()) || item.username || "Khách tại quầy"}</p>
+                    )}
+                    {activeTab === "promotions" && (
+                      <p className="text-xs text-stone-500 mt-1">
+                        {item.discountType === "PERCENT" ? `Giảm ${item.discountValue}%` : `Giảm ${item.discountValue?.toLocaleString("vi-VN")}đ`}
+                        {item.minOrderAmount > 0 && ` • Đơn từ ${item.minOrderAmount?.toLocaleString("vi-VN")}đ`}
+                      </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

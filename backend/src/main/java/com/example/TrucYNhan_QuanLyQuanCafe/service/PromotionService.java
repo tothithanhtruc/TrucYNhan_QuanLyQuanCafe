@@ -12,4 +12,7 @@ public interface PromotionService {
     PromotionResponse create(PromotionRequest request);
     PromotionResponse update(Long id, PromotionRequest request);
     void delete(Long id);
+    List<PromotionResponse> getDeleted();
+    void restore(Long id);
+    void permanentlyDelete(Long id);
 }
