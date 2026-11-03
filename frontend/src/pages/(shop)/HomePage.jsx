@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import ProductCard from "../../components/ProductCard";
 import { getProducts } from "../../services/productApi";
+import { getCategories } from "../../services/categoryApi";
 import { getBanners } from "../../services/bannerApi";
 import { getPosts } from "../../services/postApi";
+import { resolveCategoryImage } from "../../utils/format";
+import allImage from "../../assets/all.jpg";
 
 function mapProduct(p) {
   const price = Number(p.salePrice ?? p.sale_price ?? p.price ?? 0);
@@ -55,6 +58,8 @@ export default function HomePage() {
   const [bestSellingProducts, setBestSellingProducts] = useState([]);
   const [hotProducts, setHotProducts] = useState([]);
   const [promoProducts, setPromoProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [allProductCount, setAllProductCount] = useState(0);
 
   // State cho bài viết
   const [posts, setPosts] = useState([]);
@@ -78,10 +83,11 @@ export default function HomePage() {
     let isMounted = true;
 
     async function loadHomeData() {
-      const [productResult, bannerResult, postResult] = await Promise.allSettled([
+      const [productResult, bannerResult, postResult, categoryResult] = await Promise.allSettled([
         getProducts(),
         getBanners(),
         getPosts(),
+        getCategories(),
       ]);
 
       if (!isMounted) return;
@@ -91,6 +97,7 @@ export default function HomePage() {
         const response = productResult.value.data;
         const rawProducts = response?.data ?? response;
         if (Array.isArray(rawProducts)) {
+          setAllProductCount(rawProducts.length);
           const mapped = rawProducts.map(mapProduct);
 
           const byDate = (a, b) => {
@@ -129,6 +136,32 @@ export default function HomePage() {
         setHotProducts([]);
         setPromoProducts([]);
         setProductError("Không thể tải sản phẩm từ máy chủ.");
+      }
+
+      if (categoryResult.status === "fulfilled") {
+        const response = categoryResult.value.data;
+        const rawCategories = response?.data ?? response;
+        if (Array.isArray(rawCategories)) {
+          const rawProducts = productResult.status === "fulfilled"
+            ? productResult.value.data?.data ?? productResult.value.data
+            : [];
+          setCategories(rawCategories.map((category) => ({
+            ...category,
+            count: (() => {
+              const count = Array.isArray(rawProducts)
+                ? rawProducts.filter((product) =>
+                String(product.category?.id ?? product.categoryId ?? product.category_id) === String(category.id)
+                ).length
+                : 0;
+              return count > 0 ? count : category.productCount ?? 5;
+            })(),
+          })));
+        } else {
+          setCategories([]);
+        }
+      } else {
+        console.error("Lỗi tải danh mục:", categoryResult.reason);
+        setCategories([]);
       }
 
       // Banner
@@ -417,6 +450,52 @@ export default function HomePage() {
             >
               Xem cửa hàng
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* DANH MỤC SẢN PHẨM */}
+      <section className="border-b border-stone-200 bg-white py-12">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+            <Link to="/products" className="group flex flex-col items-center">
+              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#f8f6f2] p-2 transition-all duration-300 hover:ring-1 hover:ring-amber-600">
+                <img
+                  src={allImage}
+                  alt="Tất cả sản phẩm"
+                  className="h-full w-full rounded-full object-cover"
+                />
+              </div>
+              <span className="mt-3 font-heading text-sm font-semibold text-stone-800 transition-colors group-hover:text-amber-800">
+                All Coffee
+              </span>
+              <span className="mt-0.5 text-xs text-stone-400">{allProductCount} Items</span>
+            </Link>
+
+            {categories.slice(0, 5).map((category) => (
+              <Link
+                key={category.id}
+                to={`/products?categoryId=${encodeURIComponent(category.id)}`}
+                className="group flex flex-col items-center"
+              >
+                <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#f8f6f2] p-2 transition-all duration-300 hover:ring-1 hover:ring-amber-600">
+                  {resolveCategoryImage(category.image) && (
+                    <img
+                      src={resolveCategoryImage(category.image)}
+                      alt={category.name}
+                      className="h-full w-full rounded-full object-cover"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  )}
+                </div>
+                <span className="mt-3 max-w-[120px] truncate text-center font-heading text-sm font-semibold text-stone-800 transition-colors group-hover:text-amber-800">
+                  {category.name}
+                </span>
+                <span className="mt-0.5 text-xs text-stone-400">{category.count} Items</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

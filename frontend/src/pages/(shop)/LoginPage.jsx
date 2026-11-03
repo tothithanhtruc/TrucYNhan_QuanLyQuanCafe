@@ -1,13 +1,30 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { getCurrentUserRole, login } from "../../services/authApi";
-import { Coffee, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
+import {
+  getCurrentUserRole,
+  login,
+} from "../../services/authApi";
+import {
+  Coffee,
+  Lock,
+  User,
+  AlertCircle,
+  ArrowRight,
+  Smartphone,
+} from "lucide-react";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotStep, setForgotStep] = useState("request");
+  const [forgotUsername, setForgotUsername] = useState("");
+  const [forgotPhone, setForgotPhone] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [forgotMessage, setForgotMessage] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,6 +59,54 @@ export default function LoginPage() {
     }
   };
 
+  const handleContinueReset = (e) => {
+    e.preventDefault();
+    if (!forgotUsername.trim() || !forgotPhone.trim()) {
+      setError("Vui lòng nhập tên đăng nhập và số điện thoại đã đăng ký.");
+      return;
+    }
+
+    setError("");
+    setForgotMessage("");
+    setForgotStep("password");
+  };
+
+  const handleResetPassword = (e) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+
+    setError("");
+    setForgotMode(false);
+    setPassword("");
+    setForgotMessage(
+      "Mô phỏng hoàn tất cho tài khoản này. Mật khẩu thật chưa được thay đổi.",
+    );
+  };
+
+  const openForgotPassword = () => {
+    setForgotUsername(username.trim());
+    setForgotPhone("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setForgotMessage("");
+    setError("");
+    setForgotStep("request");
+    setForgotMode(true);
+  };
+
+  const closeForgotPassword = () => {
+    setForgotMode(false);
+    setError("");
+    setForgotMessage("");
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-stone-100">
       <div
@@ -73,7 +138,113 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Form */}
+          {forgotMessage && (
+            <p className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800" role="status">
+              {forgotMessage}
+            </p>
+          )}
+
+          {forgotMode ? (
+            <section>
+              <h2 className="mb-1 text-lg font-bold text-stone-900">
+                {forgotStep === "request" ? "Quên mật khẩu" : "Đặt mật khẩu mới"}
+              </h2>
+             
+              {forgotStep === "request" ? (
+                <form onSubmit={handleContinueReset} className="space-y-4">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-700">
+                      Tên đăng nhập
+                    </span>
+                    <span className="relative block">
+                      <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                      <input
+                        type="text"
+                        required
+                        autoComplete="username"
+                        value={forgotUsername}
+                        onChange={(e) => setForgotUsername(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-stone-50 py-3 pl-10 pr-4 text-sm focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                        placeholder="Nhập tên tài khoản"
+                      />
+                    </span>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-700">
+                      Số điện thoại đã đăng ký
+                    </span>
+                    <span className="relative block">
+                      <Smartphone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                      <input
+                        type="tel"
+                        required
+                        autoComplete="tel"
+                        value={forgotPhone}
+                        onChange={(e) => setForgotPhone(e.target.value)}
+                        className="w-full rounded-xl border border-stone-200 bg-stone-50 py-3 pl-10 pr-4 text-sm focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                        placeholder="0901234567"
+                      />
+                    </span>
+                  </label>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-800 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-amber-900"
+                  >
+                    Tiếp tục
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-700">
+                      Mật khẩu mới
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      placeholder="Ít nhất 6 ký tự"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-700">
+                      Nhập lại mật khẩu mới
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      placeholder="Nhập lại mật khẩu"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-800 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-amber-900"
+                  >
+                    Xác nhận
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </form>
+              )}
+              <button
+                type="button"
+                onClick={closeForgotPassword}
+                className="mt-4 w-full text-sm font-semibold text-stone-500 hover:text-stone-800"
+              >
+                Quay lại đăng nhập
+              </button>
+            </section>
+          ) : (
+          /* Login form */
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">
@@ -97,12 +268,13 @@ export default function LoginPage() {
                 <label className="text-xs font-bold text-stone-700 uppercase tracking-wider">
                   Mật Khẩu
                 </label>
-                <Link
-                  to="#"
+                <button
+                  type="button"
+                  onClick={openForgotPassword}
                   className="text-xs text-amber-800 hover:text-amber-900 font-semibold"
                 >
                   Quên mật khẩu?
-                </Link>
+                </button>
               </div>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
@@ -126,6 +298,7 @@ export default function LoginPage() {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
+          )}
 
           {location.state?.message && (
             <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">

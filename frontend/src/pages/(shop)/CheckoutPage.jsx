@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PublicLayout from "../../layouts/PublicLayout";
 import { checkout } from "../../services/orderApi";
-import { getPromotionByCode } from "../../services/adminApi";
+import { adminGetPromotions, getPromotionByCode } from "../../services/adminApi";
 import { removeFromCart } from "../../services/cartApi";
 import { createVNPayPaymentUrl, simulateVNPayPayment } from "../../services/paymentApi";
 import { formatCurrency, resolveProductImage } from "../../utils/format";
 import { isLoggedIn } from "../../services/authApi";
 import { getMyProfile } from "../../services/profileApi";
+import { getCustomizationSummary } from "../../utils/drinkCustomization";
 import {
   ArrowLeft,
   CreditCard,
@@ -24,6 +25,7 @@ import {
   X,
   AlertCircle,
   Percent,
+  Sparkles,
 } from "lucide-react";
 
 const BANK_OPTIONS = [
@@ -86,6 +88,9 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState("");
   const [promoSuccess, setPromoSuccess] = useState("");
+  const [promotions, setPromotions] = useState([]);
+  const [promotionsLoading, setPromotionsLoading] = useState(true);
+  const [promotionsError, setPromotionsError] = useState("");
 
   useEffect(() => {
     // Đọc danh sách sản phẩm đã chọn từ sessionStorage
@@ -136,6 +141,31 @@ export default function CheckoutPage() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    let active = true;
+    adminGetPromotions()
+      .then((response) => {
+        if (active) {
+          setPromotions(response.data?.data || []);
+        }
+      })
+      .catch((promotionError) => {
+        console.error("Lỗi tải gợi ý voucher:", promotionError);
+        if (active) {
+          setPromotionsError("Không thể tải danh sách voucher gợi ý.");
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setPromotionsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   /* ─── Tính tổng & Giảm giá ─── */
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -157,20 +187,33 @@ export default function CheckoutPage() {
   const shippingFee = 0;
   const total = Math.max(0, subtotal - discountAmount + shippingFee);
 
+  const suggestedPromotions = promotions.filter((promo) => {
+    if (promo.status !== 1) return false;
+    const now = new Date();
+    if (promo.startDate && new Date(promo.startDate) > now) return false;
+    if (promo.endDate && new Date(promo.endDate) < now) return false;
+    if (promo.quantity !== null && promo.quantity !== undefined && promo.quantity <= 0) {
+      return false;
+    }
+    return true;
+  });
+
   /* ─── Xử lý áp dụng mã khuyến mãi ─── */
-  const handleApplyPromo = async (e) => {
+  const handleApplyPromo = async (e, code = promoCodeInput) => {
     if (e) e.preventDefault();
-    if (!promoCodeInput.trim()) {
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) {
       setPromoError("Vui lòng nhập mã khuyến mãi");
       return;
     }
 
+    setPromoCodeInput(normalizedCode);
     setPromoLoading(true);
     setPromoError("");
     setPromoSuccess("");
 
     try {
-      const res = await getPromotionByCode(promoCodeInput.trim().toUpperCase());
+      const res = await getPromotionByCode(normalizedCode);
       const promo = res.data?.data;
       if (!promo) {
         setPromoError("Mã khuyến mãi không tồn tại.");
@@ -259,13 +302,18 @@ export default function CheckoutPage() {
         items: items.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
+          sugarLevel: item.sugarLevel || "100%",
+          iceLevel: item.iceLevel || "NORMAL",
+          toppings: item.toppings || [],
         })),
       });
 
       const createdOrder = response.data?.data ?? response.data;
 
       // Xóa các sản phẩm đã đặt khỏi giỏ hàng
-      items.forEach((item) => removeFromCart(item.id));
+      items.forEach((item) => {
+        if (item.cartLineId) removeFromCart(item.cartLineId);
+      });
       sessionStorage.removeItem("checkout-items");
 
       // Nếu chọn thanh toán VNPAY -> tạo link thanh toán và redirect sang Cổng VNPAY Sandbox
@@ -543,7 +591,7 @@ export default function CheckoutPage() {
               <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
                 {items.map((item) => (
                   <div
-                    key={item.id}
+                    key={item.cartLineId || item.id}
                     className="flex items-center gap-3 rounded-lg bg-stone-50 p-3"
                   >
                     {resolveProductImage(item.image, item.id) && (
@@ -559,6 +607,9 @@ export default function CheckoutPage() {
                       </p>
                       <p className="text-xs text-stone-500">
                         {formatCurrency(item.price)} × {item.quantity}
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        {getCustomizationSummary(item)}
                       </p>
                     </div>
                     <p className="whitespace-nowrap text-sm font-bold text-stone-800">
@@ -606,6 +657,70 @@ export default function CheckoutPage() {
                         <span>{promoError}</span>
                       </p>
                     )}
+                    <div className="space-y-2 pt-2">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold text-stone-600">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                        Voucher gợi ý
+                      </p>
+                      {promotionsLoading ? (
+                        <p className="text-xs text-stone-500">Đang tìm voucher phù hợp...</p>
+                      ) : promotionsError ? (
+                        <p className="text-xs text-rose-600" role="alert">
+                          {promotionsError}
+                        </p>
+                      ) : suggestedPromotions.length === 0 ? (
+                        <p className="text-xs text-stone-500">
+                          Hiện chưa có voucher khả dụng. Bạn vẫn có thể nhập mã riêng.
+                        </p>
+                      ) : (
+                        <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                          {suggestedPromotions.map((promo) => {
+                            const meetsMinimum =
+                              subtotal >= Number(promo.minOrderAmount || 0);
+                            const amountNeeded = Math.max(
+                              0,
+                              Number(promo.minOrderAmount || 0) - subtotal,
+                            );
+
+                            return (
+                              <div
+                                key={promo.id}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/60 p-2.5"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate font-mono text-sm font-bold text-amber-900">
+                                    {promo.code}
+                                    <span className="ml-2 font-sans text-xs font-semibold text-amber-800">
+                                      {promo.discountType === "PERCENT"
+                                        ? `Giảm ${promo.discountValue}%`
+                                        : `Giảm ${Number(promo.discountValue).toLocaleString("vi-VN")}đ`}
+                                    </span>
+                                  </p>
+                                  <p className="truncate text-xs text-stone-600">
+                                    {promo.name}
+                                  </p>
+                                  {Number(promo.minOrderAmount) > 0 && (
+                                    <p className="text-[11px] text-stone-500">
+                                      {meetsMinimum
+                                        ? `Đơn tối thiểu ${formatCurrency(promo.minOrderAmount)}`
+                                        : `Mua thêm ${formatCurrency(amountNeeded)} để dùng mã`}
+                                    </p>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(event) => handleApplyPromo(event, promo.code)}
+                                  disabled={promoLoading || !meetsMinimum}
+                                  className="shrink-0 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {meetsMinimum ? "Áp dụng" : "Chưa đủ"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-3 flex items-center justify-between">
