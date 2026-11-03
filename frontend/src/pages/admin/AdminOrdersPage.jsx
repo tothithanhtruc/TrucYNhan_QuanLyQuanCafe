@@ -40,6 +40,14 @@ const getCustomerName = (order) => {
   return order.username || "Khách tại quầy";
 };
 
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -122,6 +130,98 @@ export default function AdminOrdersPage() {
       console.error("Lỗi khi xóa đơn hàng:", err);
       showToast("Không thể xóa đơn hàng", "error");
     }
+  };
+
+  const handlePrintInvoice = (order) => {
+    const printWindow = window.open("", "_blank", "width=800,height=900");
+    if (!printWindow) {
+      showToast("Không thể mở cửa sổ in. Vui lòng cho phép popup trên trình duyệt.", "error");
+      return;
+    }
+
+    const items = Array.isArray(order.items) ? order.items : [];
+    const itemRows = items.length
+      ? items
+        .map(
+          (item) => `
+            <tr>
+              <td>
+                ${escapeHtml(item.productName || "Sản phẩm")}
+                ${item.sugarLevel || item.iceLevel
+              ? `<small>${escapeHtml(item.sugarLevel ? `Đường: ${item.sugarLevel}` : "")}${item.sugarLevel && item.iceLevel ? " · " : ""}${escapeHtml(item.iceLevel ? `Đá: ${item.iceLevel}` : "")}</small>`
+              : ""}
+              </td>
+              <td class="number">${item.quantity || 0}</td>
+              <td class="number">${formatCurrency(item.unitPrice)}</td>
+              <td class="number">${formatCurrency(item.subtotal)}</td>
+            </tr>
+          `
+        )
+        .join("")
+      : `<tr><td colspan="4" class="empty">Không có thông tin món hàng</td></tr>`;
+
+    const orderDate = order.orderDate || order.createdAt;
+    const discount = Number(order.discountAmount || 0);
+    const shippingFee = Number(order.shippingFee || 0);
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html lang="vi">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Hóa đơn #${escapeHtml(order.orderCode || order.id)}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 32px; color: #292524; font: 14px Arial, sans-serif; }
+            .invoice { max-width: 720px; margin: auto; }
+            header { text-align: center; border-bottom: 2px solid #78350f; padding-bottom: 18px; }
+            h1 { margin: 0 0 6px; color: #78350f; font-size: 26px; }
+            header p { margin: 3px 0; color: #57534e; }
+            .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin: 20px 0; }
+            .meta strong { display: inline-block; min-width: 105px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { padding: 9px 6px; border-bottom: 1px solid #e7e5e4; text-align: left; vertical-align: top; }
+            th { background: #f5f5f4; color: #44403c; font-size: 12px; text-transform: uppercase; }
+            .number { text-align: right; white-space: nowrap; }
+            small { display: block; margin-top: 4px; color: #78716c; }
+            .empty { text-align: center; color: #78716c; }
+            .summary { margin: 18px 0 0 auto; max-width: 300px; }
+            .summary div { display: flex; justify-content: space-between; padding: 5px 0; }
+            .summary .total { border-top: 2px solid #78350f; margin-top: 5px; padding-top: 10px; font-size: 18px; font-weight: bold; color: #78350f; }
+            footer { text-align: center; margin-top: 40px; color: #78716c; }
+            @media print { body { padding: 0; } .invoice { max-width: none; } }
+          </style>
+        </head>
+        <body>
+          <main class="invoice">
+            <header>
+              <h1>HÓA ĐƠN THANH TOÁN</h1>
+              <p>Mã đơn: <strong>#${escapeHtml(order.orderCode || order.id)}</strong></p>
+              <p>${orderDate ? escapeHtml(new Date(orderDate).toLocaleString("vi-VN")) : ""}</p>
+            </header>
+            <section class="meta">
+              <div><strong>Khách hàng:</strong> ${escapeHtml(getCustomerName(order))}</div>
+              <div><strong>Số điện thoại:</strong> ${escapeHtml(order.customerPhone || "-")}</div>
+              <div><strong>Bàn:</strong> ${escapeHtml(order.tableName ? `Bàn ${order.tableName}` : "Không có")}</div>
+              <div><strong>Hình thức:</strong> ${escapeHtml(order.orderType || "Tại quán")}</div>
+              ${order.deliveryAddress ? `<div><strong>Địa chỉ:</strong> ${escapeHtml(order.deliveryAddress)}</div>` : ""}
+            </section>
+            <table>
+              <thead><tr><th>Sản phẩm</th><th class="number">SL</th><th class="number">Đơn giá</th><th class="number">Thành tiền</th></tr></thead>
+              <tbody>${itemRows}</tbody>
+            </table>
+            <section class="summary">
+              ${shippingFee ? `<div><span>Phí giao hàng</span><span>${formatCurrency(shippingFee)}</span></div>` : ""}
+              ${discount ? `<div><span>Giảm giá</span><span>- ${formatCurrency(discount)}</span></div>` : ""}
+              <div class="total"><span>Tổng thanh toán</span><span>${formatCurrency(order.totalAmount)}</span></div>
+            </section>
+            <footer>Cảm ơn quý khách và hẹn gặp lại!</footer>
+          </main>
+          <script>window.onload = function () { window.print(); window.onafterprint = function () { window.close(); }; };</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const getStatusBadge = (status) => {
@@ -328,6 +428,13 @@ const paginatedOrders = filteredOrders.slice(
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => handlePrintInvoice(o)}
+                            title="In hóa đơn"
+                            className="p-1.5 text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => setDeleteConfirmId(o.id)}
                             title="Xóa đơn hàng"
                             className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
@@ -421,6 +528,15 @@ const paginatedOrders = filteredOrders.slice(
                     {formatCurrency(selectedOrder.totalAmount)}
                   </span>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => handlePrintInvoice(selectedOrder)}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-xl bg-amber-700 text-white hover:bg-amber-800 transition"
+                >
+                  <FileText className="w-4 h-4" />
+                  In hóa đơn
+                </button>
 
                 {/* Quick Status Update Buttons */}
                 <div className="pt-4 border-t border-stone-100">
