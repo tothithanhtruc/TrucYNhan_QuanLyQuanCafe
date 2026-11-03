@@ -11,6 +11,7 @@ import {
 } from "../../utils/format";
 import Pagination from "../../components/Pagination";
 import allImage from "../../assets/all.jpg";
+import { Search } from "lucide-react";
 
 
 
@@ -40,6 +41,14 @@ function mapProduct(p) {
   };
 }
 
+function normalizeSearchText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export default function ShopProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchKeyword = searchParams.get("search") || "";
@@ -65,6 +74,12 @@ export default function ShopProductsPage() {
   useEffect(() => {
     setSearchInput(searchKeyword);
   }, [searchKeyword]);
+
+  useEffect(() => {
+    const categoryId = searchParams.get("categoryId");
+    setActiveCat(categoryId ? Number(categoryId) : null);
+    setPage(1);
+  }, [searchParams]);
 
   useEffect(() => {
     setLoading(true);
@@ -103,26 +118,31 @@ export default function ShopProductsPage() {
 
   const handleApplySearch = (e) => {
     e.preventDefault();
+    const params = new URLSearchParams(searchParams);
     if (searchInput.trim()) {
-      setSearchParams({ search: searchInput.trim() });
+      params.set("search", searchInput.trim());
     } else {
-      setSearchParams({});
+      params.delete("search");
     }
+    setSearchParams(params);
     setPage(1);
   };
 
   const handleClearSearch = () => {
     setSearchInput("");
-    setSearchParams({});
+    const params = new URLSearchParams(searchParams);
+    params.delete("search");
+    setSearchParams(params);
     setPage(1);
   };
 
   // Filter & sort logic
   const filtered = products
-    .filter((p) => (activeCat === null ? true : p.categoryId === activeCat))
+    .filter((p) => activeCat === null || String(p.categoryId) === String(activeCat))
     .filter((p) => {
       if (!searchKeyword.trim()) return true;
-      return p.name.toLowerCase().includes(searchKeyword.trim().toLowerCase());
+      const keyword = normalizeSearchText(searchKeyword);
+      return normalizeSearchText(`${p.name} ${p.category}`).includes(keyword);
     })
     .filter((p) => {
       if (filters.inStock && p.quantity <= 0) return false;
@@ -161,72 +181,7 @@ export default function ShopProductsPage() {
         </div>
       </div>
 
-      {/* ═══════════ CIRCLE CATEGORIES ═══════════ */}
-      <section className="bg-white border-b border-stone-200 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-8 sm:gap-12 justify-center flex-wrap items-center">
-            {/* Mục "All" */}
-            <div
-              onClick={() => {
-                setActiveCat(null);
-                setPage(1);
-              }}
-              className="flex flex-col items-center group cursor-pointer"
-            >
-              <div
-                className={`w-28 h-28 rounded-full p-2 bg-[#f8f6f2] flex items-center justify-center transition-all duration-300 ${activeCat === null
-                  ? "ring-2 ring-amber-800 shadow-md scale-105"
-                  : "hover:ring-1 hover:ring-amber-600"
-                  }`}
-              >
-                <img
-                  src={allImage}
-                  alt="All Coffee"
-                  className="w-full h-full rounded-full object-cover"
-                />
-              </div>
-              <span className="font-heading font-semibold text-stone-800 text-sm mt-3 group-hover:text-amber-800 transition-colors">
-                All Coffee
-              </span>
-              <span className="text-xs text-stone-400 mt-0.5">{products.length} Items</span>
-            </div>
-
-            {/* Các danh mục từ API */}
-            {categories.slice(0, 5).map((cat, idx) => (
-              <div
-                key={cat.id}
-                onClick={() => {
-                  setActiveCat(cat.id);
-                  setPage(1);
-                }}
-                className="flex flex-col items-center group cursor-pointer"
-              >
-                <div
-                  className={`w-28 h-28 rounded-full p-2 bg-[#f8f6f2] flex items-center justify-center transition-all duration-300 ${activeCat === cat.id
-                    ? "ring-2 ring-amber-800 shadow-md scale-105"
-                    : "hover:ring-1 hover:ring-amber-600"
-                    }`}
-                >
-                  {resolveCategoryImage(cat.image) && (
-                    <img
-                      src={resolveCategoryImage(cat.image)}
-                      alt={cat.name}
-                      className="w-full h-full object-cover rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  )}
-                </div>
-                <span className="font-heading font-semibold text-stone-800 text-sm mt-3 group-hover:text-amber-800 transition-colors text-center max-w-[120px] truncate">
-                  {cat.name}
-                </span>
-                <span className="text-xs text-stone-400 mt-0.5">{cat.count} Items</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+     
 
       {/* ═══════════ MAIN CONTENT: SIDEBAR + PRODUCT GRID ═══════════ */}
       <section className="py-12 bg-white">
@@ -361,25 +316,33 @@ export default function ShopProductsPage() {
               {/* Top toolbar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-200 pb-4 mb-8 gap-4">
                 {/* Search box inside toolbar */}
-                <form onSubmit={handleApplySearch} className="flex items-center max-w-xs w-full">
+                <form onSubmit={handleApplySearch} role="search" className="flex items-center max-w-xs w-full">
                   <div className="relative w-full">
                     <input
                       type="text"
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
                       placeholder="Tìm kiếm sản phẩm..."
-                      className="w-full pl-8 pr-7 py-1.5 border border-stone-300 rounded-lg text-xs focus:outline-none focus:border-amber-800"
+                      aria-label="Tìm kiếm sản phẩm"
+                      className="w-full rounded-lg border border-stone-300 py-2 pl-3 pr-16 text-xs focus:border-amber-800 focus:outline-none"
                     />
-                    <ion-icon name="search-outline"></ion-icon>
                     {searchInput && (
                       <button
                         type="button"
                         onClick={handleClearSearch}
-                        className="absolute right-2 top-2 text-[10px] text-stone-400 hover:text-stone-700"
+                        aria-label="Xóa từ khóa tìm kiếm"
+                        className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-700"
                       >
                         ✕
                       </button>
                     )}
+                    <button
+                      type="submit"
+                      aria-label="Tìm kiếm"
+                      className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-stone-500 transition hover:bg-amber-50 hover:text-amber-800"
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
                   </div>
                 </form>
 

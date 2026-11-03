@@ -22,6 +22,13 @@ import {
   formatCurrency,
   resolveProductImage,
 } from "../../utils/format";
+import {
+  getConfiguredUnitPrice,
+  ICE_OPTIONS,
+  isCakeProduct,
+  SUGAR_OPTIONS,
+  TOPPING_OPTIONS,
+} from "../../utils/drinkCustomization";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -31,6 +38,9 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [quantity, setQuantity] = useState(1);
+  const [sugarLevel, setSugarLevel] = useState("100%");
+  const [iceLevel, setIceLevel] = useState("NORMAL");
+  const [toppings, setToppings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cartMessage, setCartMessage] = useState("");
@@ -47,6 +57,9 @@ export default function ProductDetailPage() {
       setProduct(null);
       setRelated([]);
       setQuantity(1);
+      setSugarLevel("100%");
+      setIceLevel("NORMAL");
+      setToppings([]);
       setCartMessage("");
       resumedCartAction.current = false;
 
@@ -149,15 +162,23 @@ export default function ProductDetailPage() {
         ? salePrice
         : price;
 
+    const customization = pendingAction.customization || {
+      sugarLevel: "100%",
+      iceLevel: "NORMAL",
+      toppings: [],
+    };
+
     try {
-      addToCart(
+      const cartItem = addToCart(
         {
           id: product.id,
           name: product.name,
           image: product.image,
           price: currentPrice,
+          basePrice: currentPrice,
           stock: Number(product.quantity ?? 0),
           unit: product.unit,
+          ...customization,
         },
         pendingAction.quantity
       );
@@ -167,9 +188,12 @@ export default function ProductDetailPage() {
           id: product.id,
           name: product.name,
           image: product.image,
-          price: currentPrice,
+          price: getConfiguredUnitPrice(currentPrice, customization.toppings),
+          basePrice: currentPrice,
           stock: Number(product.quantity ?? 0),
           quantity: pendingAction.quantity,
+          cartLineId: cartItem.cartLineId,
+          ...customization,
         };
 
         sessionStorage.setItem(
@@ -228,7 +252,6 @@ export default function ProductDetailPage() {
 
   // Thông tin giá và tồn kho
   const price = Number(product.price ?? 0);
-
   const salePriceValue = Number(
     product.salePrice ?? product.sale_price ?? 0
   );
@@ -244,9 +267,11 @@ export default function ProductDetailPage() {
 
   const categoryName =
     typeof product.category === "object" &&
-    product.category !== null
+      product.category !== null
       ? product.category.name
       : product.category ?? product.categoryName;
+  const isCake = isCakeProduct({ ...product, categoryName });
+  const selectedToppings = isCake ? [] : toppings;
 
   const imageUrl = product.image
     ? resolveProductImage(product.image, product.id)
@@ -277,6 +302,11 @@ export default function ProductDetailPage() {
           pendingCartAction: {
             quantity,
             buyNow,
+            customization: {
+              sugarLevel: isCake ? "100%" : sugarLevel,
+              iceLevel: isCake ? "NORMAL" : iceLevel,
+              toppings: selectedToppings,
+            },
           },
         },
       });
@@ -290,9 +320,14 @@ export default function ProductDetailPage() {
           id: product.id,
           name: product.name,
           image: product.image,
+          categoryName,
           price: currentPrice,
+          basePrice: currentPrice,
           stock,
           unit: product.unit,
+          sugarLevel: isCake ? "100%" : sugarLevel,
+          iceLevel: isCake ? "NORMAL" : iceLevel,
+          toppings: selectedToppings,
         },
         quantity
       );
@@ -313,7 +348,7 @@ export default function ProductDetailPage() {
     addCurrentProductToCart();
   };
 
-  
+
   const handleBuyNow = () => {
     //kiem tra dang nhap
     if (!isLoggedIn()) {
@@ -325,20 +360,30 @@ export default function ProductDetailPage() {
           pendingCartAction: {
             quantity,
             buyNow: true,
+            customization: {
+              sugarLevel: isCake ? "100%" : sugarLevel,
+              iceLevel: isCake ? "NORMAL" : iceLevel,
+              toppings: selectedToppings,
+            },
           },
         },
       });
       return;
     }
 
-    
+
     const buyNowItem = {
       id: product.id,
       name: product.name,
       image: product.image,
-      price: currentPrice,
+      categoryName,
+      price: getConfiguredUnitPrice(currentPrice, selectedToppings),
+      basePrice: currentPrice,
       stock,
       quantity,
+      sugarLevel: isCake ? "100%" : sugarLevel,
+      iceLevel: isCake ? "NORMAL" : iceLevel,
+      toppings: selectedToppings,
     };
 
     sessionStorage.setItem(
@@ -375,14 +420,17 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
-      <section className="bg-white py-12">
+    
+      <section className="bg-white py-10">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="grid grid-cols-1 items-start gap-10 md:grid-cols-2 lg:gap-16">
 
-            {/* Hình ảnh sản phẩm */}
-            <div className="relative h-[360px] overflow-hidden rounded-2xl border border-stone-200 bg-[#f8f6f2] sm:h-[420px]">
+          {/* Đường dẫn điều hướng */}
+          <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-2 lg:gap-14">
+
+            {/* Hình ảnh sản phẩm bên trái */}
+            <div className="relative h-[360px] overflow-hidden rounded-2xl border border-stone-200 bg-[#faeedb] sm:h-[420px]">
               {product.tag && (
-                <span className="absolute left-4 top-4 rounded bg-amber-800 px-3 py-1 text-xs text-white">
+                <span className="absolute left-4 top-4 z-10 rounded bg-amber-800 px-3 py-1 text-xs font-semibold text-white">
                   {product.tag}
                 </span>
               )}
@@ -391,7 +439,7 @@ export default function ProductDetailPage() {
                 <img
                   src={imageUrl}
                   alt={product.name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
                   }}
@@ -399,150 +447,248 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Thông tin sản phẩm */}
-            <div>
+            {/* Thông tin sản phẩm bên phải */}
+            <div className="min-w-0">
+
               {categoryName && (
                 <p className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-800">
                   {categoryName}
                 </p>
               )}
 
-              <h1 className="mb-5 text-3xl font-bold text-stone-900 sm:text-4xl">
+              <h1 className="mb-4 text-3xl font-bold text-stone-900">
                 {product.name}
               </h1>
 
               {/* Giá sản phẩm */}
-              <div className="mb-6 flex flex-wrap items-baseline gap-3">
+              <div className="mb-5 flex flex-wrap items-baseline gap-3">
                 <span className="text-3xl font-bold text-amber-800">
-                  {formatCurrency(currentPrice)}
+                  {formatCurrency(
+                    getConfiguredUnitPrice(currentPrice, selectedToppings)
+                  )}
                 </span>
 
                 {salePrice !== null && (
-                  <span className="text-lg text-stone-400 line-through">
+                  <span className="text-base text-stone-400 line-through">
                     {formatCurrency(price)}
                   </span>
                 )}
               </div>
 
-              {/* Tóm tắt */}
+              {/* Mô tả ngắn */}
               {product.summary && (
-                <p className="mb-6 border-b border-stone-200 pb-6 text-sm leading-relaxed text-stone-600">
+                <p className="mb-5 border-b border-stone-200 pb-5 text-sm leading-relaxed text-stone-600">
                   {product.summary}
                 </p>
               )}
 
-              {/* Thông tin tồn kho */}
-              <div className="mb-6 space-y-3 border-b border-stone-200 pb-6 text-sm">
+              {/* Tùy chỉnh đồ uống */}
+              {!isCake && (
+              <div className="space-y-4 border-b border-stone-200 pb-5">
+
+                {/* Mức đường */}
+                <fieldset>
+                  <legend className="mb-2 text-sm font-semibold text-stone-800">
+                    Mức đường
+                  </legend>
+
+                  <div className="flex flex-wrap gap-2">
+                    {SUGAR_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${sugarLevel === option.value
+                            ? "border-amber-800 bg-amber-50"
+                            : "border-stone-300 hover:border-amber-700"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="sugarLevel"
+                          value={option.value}
+                          checked={sugarLevel === option.value}
+                          onChange={() => setSugarLevel(option.value)}
+                          className="accent-amber-800"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {/* Mức đá */}
+                <fieldset>
+                  <legend className="mb-2 text-sm font-semibold text-stone-800">
+                    Mức đá
+                  </legend>
+
+                  <div className="flex flex-wrap gap-2">
+                    {ICE_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${iceLevel === option.value
+                            ? "border-amber-800 bg-amber-50"
+                            : "border-stone-300 hover:border-amber-700"
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          name="iceLevel"
+                          value={option.value}
+                          checked={iceLevel === option.value}
+                          onChange={() => setIceLevel(option.value)}
+                          className="accent-amber-800"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {/* Topping */}
+                <fieldset>
+                  <legend className="mb-2 text-sm font-semibold text-stone-800">
+                    Topping (có thể chọn nhiều)
+                  </legend>
+
+                  <div className="space-y-2">
+                    {TOPPING_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-stone-300 px-3 py-2 text-sm transition hover:border-amber-700"
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={toppings.includes(option.value)}
+                            onChange={(event) =>
+                              setToppings((current) =>
+                                event.target.checked
+                                  ? [...current, option.value]
+                                  : current.filter(
+                                    (value) => value !== option.value
+                                  )
+                              )
+                            }
+                            className="accent-amber-800"
+                          />
+                          {option.label}
+                        </span>
+
+                        <span className="shrink-0 text-stone-600">
+                          +{formatCurrency(option.price)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+              )}
+
+              {/* Thông tin sản phẩm: nằm ngay dưới topping */}
+              <div className="grid grid-cols-1 gap-3 border-b border-stone-200 py-5 text-sm sm:grid-cols-2">
                 {product.quantity != null && (
-                  <div className="flex gap-3">
-                    <span className="w-32 shrink-0 font-semibold text-stone-800">
+                  <div className="flex gap-2">
+                    <span className="font-semibold text-stone-800">
                       Số lượng:
                     </span>
-
                     <span
                       className={
-                        stock > 0
-                          ? "text-emerald-700"
-                          : "text-red-600"
+                        stock > 0 ? "text-emerald-700" : "text-red-600"
                       }
                     >
-                      {stock}
-                      {product.unit
-                        ? ` ${product.unit}`
-                        : ""}
+                      {stock} {product.unit || ""}
                     </span>
                   </div>
                 )}
 
                 {product.unit && (
-                  <div className="flex gap-3">
-                    <span className="w-32 shrink-0 font-semibold text-stone-800">
+                  <div className="flex gap-2">
+                    <span className="font-semibold text-stone-800">
                       Đơn vị:
                     </span>
-
                     <span>{product.unit}</span>
                   </div>
                 )}
 
-                <div className="flex gap-3">
-                  <span className="w-32 shrink-0 font-semibold text-stone-800">
+                <div className="flex gap-2">
+                  <span className="font-semibold text-stone-800">
                     Mã sản phẩm:
                   </span>
-
                   <span>{product.id}</span>
                 </div>
               </div>
 
-              {/* Chọn số lượng */}
-              {stock > 0 && (
-                <div className="mb-6 flex flex-wrap items-center gap-4">
-                  <div className="flex items-center overflow-hidden rounded border border-stone-300">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleQuantityChange(quantity - 1)
-                      }
-                      disabled={quantity <= 1}
-                      className="h-11 w-10 disabled:opacity-40"
-                    >
-                      -
-                    </button>
+              {/* Khu vực đặt hàng: nằm dưới toàn bộ thông tin */}
+              <div className="pt-5">
 
-                    <span className="flex h-11 w-12 items-center justify-center border-x border-stone-300">
-                      {quantity}
-                    </span>
+                {stock > 0 ? (
+                  <>
+                    {/* Chọn số lượng */}
+                    <div className="mb-5 flex items-center gap-3">
+                      <span className="text-sm font-semibold text-stone-800">
+                        Số lượng mua:
+                      </span>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleQuantityChange(quantity + 1)
-                      }
-                      disabled={quantity >= stock}
-                      className="h-11 w-10 disabled:opacity-40"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              )}
+                      <div className="flex items-center overflow-hidden rounded-lg border border-stone-300">
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(quantity - 1)}
+                          disabled={quantity <= 1}
+                          className="h-10 w-10 transition hover:bg-stone-100 disabled:opacity-40"
+                        >
+                          -
+                        </button>
 
-              {/* Hết hàng */}
-              {stock <= 0 && (
-                <p className="mb-6 font-medium text-red-600">
-                  Sản phẩm hiện đã hết hàng.
-                </p>
-              )}
+                        <span className="flex h-10 w-12 items-center justify-center border-x border-stone-300">
+                          {quantity}
+                        </span>
 
-              {/* Nút mua hàng */}
-              {stock > 0 && (
-                <div className="mb-6 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    className="rounded-lg border border-amber-800 px-5 py-3 text-sm font-bold text-amber-900 transition hover:bg-amber-50"
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(quantity + 1)}
+                          disabled={quantity >= stock}
+                          className="h-10 w-10 transition hover:bg-stone-100 disabled:opacity-40"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Nút mua hàng */}
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={handleAddToCart}
+                        className="rounded-lg border border-amber-800 px-5 py-3 text-sm font-bold text-amber-900 transition hover:bg-amber-50"
+                      >
+                        Thêm vào giỏ
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleBuyNow}
+                        className="rounded-lg bg-amber-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-amber-900"
+                      >
+                        Mua ngay
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-medium text-red-600">
+                    Sản phẩm hiện đã hết hàng.
+                  </p>
+                )}
+
+                {/* Thông báo giỏ hàng */}
+                {cartMessage && (
+                  <p
+                    className="mt-4 text-sm font-medium text-amber-900"
+                    role="status"
                   >
-                    Thêm vào giỏ
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleBuyNow}
-                    className="rounded-lg bg-amber-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-amber-900"
-                  >
-                    Mua ngay
-                  </button>
-                </div>
-              )}
-
-              {/* Thông báo giỏ hàng */}
-              {cartMessage && (
-                <p
-                  className="mb-5 text-sm font-medium text-amber-900"
-                  role="status"
-                >
-                  {cartMessage}
-                </p>
-              )}
+                    {cartMessage}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -568,10 +714,7 @@ export default function ProductDetailPage() {
 
               <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
                 {related.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    product={item}
-                  />
+                  <ProductCard key={item.id} product={item} />
                 ))}
               </div>
             </div>

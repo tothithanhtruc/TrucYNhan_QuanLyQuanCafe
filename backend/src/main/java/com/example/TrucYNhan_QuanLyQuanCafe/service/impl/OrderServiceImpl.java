@@ -20,6 +20,7 @@ import com.example.TrucYNhan_QuanLyQuanCafe.repository.PromotionRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.UserRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.EmployeeRepository;
 import com.example.TrucYNhan_QuanLyQuanCafe.repository.TableRepository;
+import com.example.TrucYNhan_QuanLyQuanCafe.service.DrinkCustomization;
 import com.example.TrucYNhan_QuanLyQuanCafe.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,27 +88,53 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng đăng nhập"));
 
-        Map<Long, Integer> requestedQuantities = new LinkedHashMap<>();
+        Map<CheckoutLineKey, Integer> requestedQuantities = new LinkedHashMap<>();
         for (CheckoutItemRequest item : request.items()) {
-            requestedQuantities.merge(item.productId(), item.quantity(), Integer::sum);
+            String sugarLevel = DrinkCustomization.normalizeSugarLevel(item.sugarLevel());
+            String iceLevel = DrinkCustomization.normalizeIceLevel(item.iceLevel());
+            List<String> toppings = DrinkCustomization.normalizeToppings(item.toppings());
+            CheckoutLineKey lineKey = new CheckoutLineKey(
+                    item.productId(), sugarLevel, iceLevel, String.join(",", toppings));
+            requestedQuantities.merge(lineKey, item.quantity(), Integer::sum);
         }
 
-        Map<Product, Integer> products = new LinkedHashMap<>();
-        BigDecimal total = BigDecimal.ZERO;
-        for (Map.Entry<Long, Integer> entry : requestedQuantities.entrySet()) {
-            Product product = productRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy sản phẩm với mã: " + entry.getKey()));
-            int quantity = entry.getValue();
+        Map<Long, Product> productsById = new LinkedHashMap<>();
+        Map<Long, Integer> quantitiesByProduct = new LinkedHashMap<>();
+        for (Map.Entry<CheckoutLineKey, Integer> entry : requestedQuantities.entrySet()) {
+            Long productId = entry.getKey().productId();
+            Product product = productsById.computeIfAbsent(productId, id ->
+                    productRepository.findById(id)
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                    "Không tìm thấy sản phẩm với mã: " + id)));
             if (product.getDeletedAt() != null || !Integer.valueOf(1).equals(product.getStatus())) {
                 throw new BadRequestException("Sản phẩm \"" + product.getName() + "\" hiện không được bán");
             }
-            if (product.getQuantity() == null || product.getQuantity() < quantity) {
+            quantitiesByProduct.merge(productId, entry.getValue(), Integer::sum);
+        }
+
+        for (Map.Entry<Long, Integer> entry : quantitiesByProduct.entrySet()) {
+            Product product = productsById.get(entry.getKey());
+            if (product.getQuantity() == null || product.getQuantity() < entry.getValue()) {
                 throw new BadRequestException("Sản phẩm \"" + product.getName() + "\" không đủ số lượng tồn kho");
             }
+        }
 
-            products.put(product, quantity);
-            total = total.add(getUnitPrice(product).multiply(BigDecimal.valueOf(quantity)));
+        List<PricedCheckoutLine> checkoutLines = new java.util.ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        for (Map.Entry<CheckoutLineKey, Integer> entry : requestedQuantities.entrySet()) {
+            CheckoutLineKey lineKey = entry.getKey();
+            Product product = productsById.get(lineKey.productId());
+            int quantity = entry.getValue();
+            List<String> toppings = lineKey.toppings().isEmpty()
+                    ? List.of()
+                    : List.of(lineKey.toppings().split(","));
+            BigDecimal toppingAmount = DrinkCustomization.getToppingAmount(toppings);
+            BigDecimal unitPrice = getUnitPrice(product).add(toppingAmount);
+            BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
+            checkoutLines.add(new PricedCheckoutLine(
+                    product, quantity, lineKey.sugarLevel(), lineKey.iceLevel(),
+                    toppings, toppingAmount, unitPrice, subtotal));
+            total = total.add(subtotal);
         }
 
         // Xử lý khuyến mãi nếu có mã
@@ -181,19 +208,22 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus("PENDING");
         order.setNote(request.note());
 
-        for (Map.Entry<Product, Integer> entry : products.entrySet()) {
-            Product product = entry.getKey();
-            int quantity = entry.getValue();
-            BigDecimal unitPrice = getUnitPrice(product);
-
+        quantitiesByProduct.forEach((productId, quantity) -> {
+            Product product = productsById.get(productId);
             product.setQuantity(product.getQuantity() - quantity);
+        });
+        for (PricedCheckoutLine line : checkoutLines) {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
-            orderItem.setProduct(product);
-            orderItem.setProductName(product.getName());
-            orderItem.setQuantity(quantity);
-            orderItem.setUnitPrice(unitPrice);
-            orderItem.setSubtotal(unitPrice.multiply(BigDecimal.valueOf(quantity)));
+            orderItem.setProduct(line.product());
+            orderItem.setProductName(line.product().getName());
+            orderItem.setQuantity(line.quantity());
+            orderItem.setUnitPrice(line.unitPrice());
+            orderItem.setSubtotal(line.subtotal());
+            orderItem.setSugarLevel(line.sugarLevel());
+            orderItem.setIceLevel(line.iceLevel());
+            orderItem.setToppings(line.toppings());
+            orderItem.setToppingAmount(line.toppingAmount());
             order.getItems().add(orderItem);
         }
 
@@ -301,5 +331,25 @@ public class OrderServiceImpl implements OrderService {
             return salePrice;
         }
         return product.getPrice();
+    }
+
+    private record CheckoutLineKey(
+            Long productId,
+            String sugarLevel,
+            String iceLevel,
+            String toppings
+    ) {
+    }
+
+    private record PricedCheckoutLine(
+            Product product,
+            Integer quantity,
+            String sugarLevel,
+            String iceLevel,
+            List<String> toppings,
+            BigDecimal toppingAmount,
+            BigDecimal unitPrice,
+            BigDecimal subtotal
+    ) {
     }
 }

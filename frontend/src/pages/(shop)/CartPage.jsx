@@ -6,12 +6,20 @@ import {
   clearCart,
   getCart,
   removeFromCart,
+  updateCartCustomization,
   updateCartQuantity,
 } from "../../services/cartApi";
 
 import { Minus, Plus, ShoppingBag, Trash2, Truck } from "lucide-react";
 
 import { formatCurrency, resolveProductImage } from "../../utils/format";
+import {
+  getCustomizationSummary,
+  ICE_OPTIONS,
+  isCakeProduct,
+  SUGAR_OPTIONS,
+  TOPPING_OPTIONS,
+} from "../../utils/drinkCustomization";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
@@ -23,14 +31,14 @@ export default function CartPage() {
     const items = getCart();
     setCart(items);
     // Mặc định chọn tất cả
-    setSelectedIds(new Set(items.map((item) => String(item.id))));
+    setSelectedIds(new Set(items.map((item) => item.cartLineId)));
   }, []);
 
   /* ─── Checkbox helpers ─── */
-  const toggleSelect = (productId) => {
+  const toggleSelect = (cartLineId) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      const key = String(productId);
+      const key = cartLineId;
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
@@ -41,7 +49,7 @@ export default function CartPage() {
     if (selectedIds.size === cart.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(cart.map((item) => String(item.id))));
+      setSelectedIds(new Set(cart.map((item) => item.cartLineId)));
     }
   };
 
@@ -49,7 +57,7 @@ export default function CartPage() {
 
   /* ─── Tính tổng tiền sản phẩm đã chọn ─── */
   const selectedItems = useMemo(
-    () => cart.filter((item) => selectedIds.has(String(item.id))),
+    () => cart.filter((item) => selectedIds.has(item.cartLineId)),
     [cart, selectedIds],
   );
 
@@ -62,9 +70,9 @@ export default function CartPage() {
   const total = subtotal + shippingFee;
 
   /* ─── Cart mutations ─── */
-  const changeQuantity = (productId, quantity) => {
+  const changeQuantity = (cartLineId, quantity) => {
     try {
-      updateCartQuantity(productId, quantity);
+      updateCartQuantity(cartLineId, quantity);
       setCart(getCart());
       setError("");
     } catch (cartError) {
@@ -72,11 +80,11 @@ export default function CartPage() {
     }
   };
 
-  const removeItem = (productId) => {
-    removeFromCart(productId);
+  const removeItem = (cartLineId) => {
+    removeFromCart(cartLineId);
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.delete(String(productId));
+      next.delete(cartLineId);
       return next;
     });
     setCart(getCart());
@@ -86,6 +94,16 @@ export default function CartPage() {
     selectedIds.forEach((id) => removeFromCart(id));
     setSelectedIds(new Set());
     setCart(getCart());
+  };
+
+  const changeCustomization = (item, customization) => {
+    try {
+      updateCartCustomization(item.cartLineId, customization);
+      setCart(getCart());
+      setError("");
+    } catch (cartError) {
+      setError(cartError.message);
+    }
   };
 
   /* ─── Đặt hàng → chuyển sang trang CheckoutPage ─── */
@@ -148,11 +166,13 @@ export default function CartPage() {
                 </p>
               )}
 
-              {cart.map((item) => (
+              {cart.map((item) => {
+                const isCake = isCakeProduct(item);
+                return (
                 <article
-                  key={item.id}
+                  key={item.cartLineId}
                   className={`flex flex-wrap items-center gap-4 rounded-xl border bg-white p-4 transition-colors ${
-                    selectedIds.has(String(item.id))
+                    selectedIds.has(item.cartLineId)
                       ? "border-amber-300 bg-amber-50/30"
                       : "border-stone-200"
                   }`}
@@ -160,8 +180,8 @@ export default function CartPage() {
                   {/* Checkbox */}
                   <input
                     type="checkbox"
-                    checked={selectedIds.has(String(item.id))}
-                    onChange={() => toggleSelect(item.id)}
+                    checked={selectedIds.has(item.cartLineId)}
+                    onChange={() => toggleSelect(item.cartLineId)}
                     className="h-4 w-4 rounded border-stone-300 text-amber-800 focus:ring-amber-800"
                   />
 
@@ -178,13 +198,74 @@ export default function CartPage() {
                   <div className="min-w-36 flex-1">
                     <h2 className="font-semibold text-stone-900">{item.name}</h2>
                     <p className="mt-1 text-sm font-bold text-amber-900">{formatCurrency(item.price)}</p>
+                    {!isCake && (
+                      <p className="mt-1 text-xs text-stone-500">{getCustomizationSummary(item)}</p>
+                    )}
                   </div>
+
+                  {!isCake && (
+                  <div className="grid w-full gap-3 sm:grid-cols-3">
+                    <label className="text-xs font-semibold text-stone-600">
+                      Đường
+                      <select
+                        value={item.sugarLevel}
+                        onChange={(event) => changeCustomization(item, {
+                          sugarLevel: event.target.value,
+                          iceLevel: item.iceLevel,
+                          toppings: item.toppings,
+                        })}
+                        className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-2 text-sm"
+                      >
+                        {SUGAR_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-xs font-semibold text-stone-600">
+                      Đá
+                      <select
+                        value={item.iceLevel}
+                        onChange={(event) => changeCustomization(item, {
+                          sugarLevel: item.sugarLevel,
+                          iceLevel: event.target.value,
+                          toppings: item.toppings,
+                        })}
+                        className="mt-1 w-full rounded border border-stone-300 bg-white px-2 py-2 text-sm"
+                      >
+                        {ICE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <fieldset className="text-xs font-semibold text-stone-600">
+                      <legend>Topping</legend>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                        {TOPPING_OPTIONS.map((option) => (
+                          <label key={option.value} className="inline-flex items-center gap-1">
+                            <input
+                              type="checkbox"
+                              checked={item.toppings.includes(option.value)}
+                              onChange={(event) => changeCustomization(item, {
+                                sugarLevel: item.sugarLevel,
+                                iceLevel: item.iceLevel,
+                                toppings: event.target.checked
+                                  ? [...item.toppings, option.value]
+                                  : item.toppings.filter((value) => value !== option.value),
+                              })}
+                            />
+                            {option.label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  </div>
+                  )}
 
                   {/* Số lượng */}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => changeQuantity(item.id, item.quantity - 1)}
+                      onClick={() => changeQuantity(item.cartLineId, item.quantity - 1)}
                       disabled={item.quantity <= 1}
                       className="flex h-9 w-9 items-center justify-center rounded border border-stone-300 text-stone-600 hover:bg-stone-50 disabled:opacity-40"
                       aria-label={`Giảm số lượng ${item.name}`}
@@ -194,7 +275,7 @@ export default function CartPage() {
                     <span className="min-w-8 text-center font-semibold">{item.quantity}</span>
                     <button
                       type="button"
-                      onClick={() => changeQuantity(item.id, item.quantity + 1)}
+                      onClick={() => changeQuantity(item.cartLineId, item.quantity + 1)}
                       disabled={item.quantity >= item.stock}
                       className="flex h-9 w-9 items-center justify-center rounded border border-stone-300 text-stone-600 hover:bg-stone-50 disabled:opacity-40"
                       aria-label={`Tăng số lượng ${item.name}`}
@@ -213,14 +294,15 @@ export default function CartPage() {
                   {/* Xóa */}
                   <button
                     type="button"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => removeItem(item.cartLineId)}
                     className="flex items-center gap-1 text-sm font-semibold text-rose-700 hover:text-rose-900"
                     title="Xóa sản phẩm"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </article>
-              ))}
+                );
+              })}
             </section>
 
             {/* ─── Tóm tắt đơn hàng ─── */}

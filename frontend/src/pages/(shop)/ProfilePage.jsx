@@ -11,6 +11,7 @@ import { getMyContactReplies } from "../../services/contactApi";
 import { MessageSquare, RefreshCw } from "lucide-react";
 import { isLoggedIn, logout } from "../../services/authApi";
 import { formatCurrency } from "../../utils/format";
+import { getCustomizationSummary } from "../../utils/drinkCustomization";
 import {
   Camera,
   Edit3,
@@ -548,6 +549,9 @@ export default function ProfilePage() {
                               <span className="ml-2 text-stone-500">
                                 × {item.quantity}
                               </span>
+                              <p className="mt-1 text-xs text-stone-500">
+                                {getCustomizationSummary(item)}
+                              </p>
                             </div>
                             <span className="font-semibold text-stone-700">
                               {formatCurrency(item.subtotal || item.unitPrice * item.quantity)}

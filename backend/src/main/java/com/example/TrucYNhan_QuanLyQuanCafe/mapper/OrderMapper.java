@@ -96,7 +96,11 @@ public class OrderMapper {
                                 item.getProductName(),
                                 item.getQuantity(),
                                 item.getUnitPrice(),
-                                item.getSubtotal()))
+                                item.getSubtotal(),
+                                item.getSugarLevel() != null ? item.getSugarLevel() : "100%",
+                                item.getIceLevel() != null ? item.getIceLevel() : "NORMAL",
+                                item.getToppings(),
+                                item.getToppingAmount()))
                         .toList(),
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
